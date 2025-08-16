@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const gestorController_1 = require("../controllers/gestorController");
+const router = (0, express_1.Router)();
+router.get('/', gestorController_1.getGestores);
+router.get('/:id', gestorController_1.getGestorById);
+router.post('/', gestorController_1.createGestor);
+router.put('/:id', gestorController_1.updateGestor);
+router.patch('/ativar/:id', gestorController_1.activateGestor);
+router.delete('/:id', gestorController_1.deleteGestor);
+exports.default = router;

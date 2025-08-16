@@ -1,0 +1,641 @@
+// import express from 'express';
+// import cors from 'cors';
+// import type { Request, Response } from 'express';
+// import mysql from 'mysql2';
+
+// /* ========== CONFIGURAÇÕES INICIAIS ========== */
+
+// const app = express();
+// const PORT = 3000;
+
+// // Middleware para habilitar CORS
+// app.use(cors());
+
+// // Middleware para interpretar JSON no corpo das requisições
+// app.use(express.json());
+
+// /* ========== CONEXÃO COM BANCO DE DADOS ========== */
+// const db = mysql.createConnection({
+//   host: 'localhost',
+//   user: 'admin',
+//   password: 'senha123',
+//   database: 'SistemaEscolar'
+// });
+
+// db.connect((err) => {
+//   if (err) {
+//     console.error('Erro ao conectar no banco:', err);
+//     return;
+//   }
+//   console.log('Conectado ao banco de dados MySQL');
+// });
+
+// // Funções de controle para Alunos
+// export const getAlunos = (req: Request, res: Response) => {
+//   db.query('SELECT * FROM Aluno WHERE Status = "Ativo"', (err, rows) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Erro ao buscar alunos' });
+//     }
+//     res.json(rows);
+//   });
+// };
+
+// export const getAlunoById = (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   db.query('SELECT * FROM Aluno WHERE Id = ? AND Status = "Ativo"', [id], (err, rows) => {
+//     if (err) {
+//       res.status(500).json({ error: 'Erro ao buscar aluno' });
+//     } else {
+//       if (!rows) {
+//         res.status(404).json({ error: 'Aluno não encontrado' });
+//       } else {
+//         res.json(rows);
+//       }
+//     }
+//   });
+// };
+
+// export const createAluno = (req: Request, res: Response) => {
+//   const { Nome, CPF, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, Status, RA } = req.body;
+//   db.query('INSERT INTO Aluno (Nome, CPF, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, Status, RA) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+//     [Nome, CPF, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, Status, RA], (err) => {
+//       if (err) {
+//         return res.status(500).json({ error: 'Erro ao cadastrar aluno' });
+//       }
+//       res.status(201).json({ message: 'Aluno cadastrado com sucesso' });
+//     });
+// };
+
+// export const updateAluno = (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   const { Nome, Telefone, Email } = req.body; // Exemplo de campos que podem ser atualizados
+//   db.query('UPDATE Aluno SET Nome = ?, Telefone = ?, Email = ? WHERE Id = ?', [Nome, Telefone, Email, id], (err) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Erro ao atualizar aluno' });
+//     }
+//     res.json({ message: 'Aluno atualizado com sucesso' });
+//   });
+// };
+
+// export const deleteAluno = (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   db.query('CALL Desativar_Aluno(?)', [id], (err) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Erro ao desativar aluno' });
+//     }
+//     res.json({ message: 'Aluno desativado com sucesso' });
+//   });
+// };
+
+// // Funções de controle para Gestores
+// export const getGestores = (req: Request, res: Response) => {
+//   db.query('SELECT * FROM Gestor WHERE Status = "Ativo"', (err, rows) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Erro ao buscar gestores' });
+//     }
+//     res.json(rows);
+//   });
+// };
+
+// export const getGestorById = (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   db.query('SELECT * FROM Gestor WHERE Id = ? AND Status = "Ativo"', [id], (err, result) => {
+//     if (err) {
+//       res.status(500).json({ error: 'Erro ao buscar gestor' });
+//     } else {
+//       if (!result || Object.keys(result).length === 0) {
+//         res.status(404).json({ error: 'Gestor não encontrado' });
+//       } else {
+//         res.json(result);
+//       }
+//     }
+//   });
+// };
+
+// export const createGestor = (req: Request, res: Response) => {
+//   const { Nome, CPF, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, Cargo, Status } = req.body;
+//   db.query('INSERT INTO Gestor (Nome, CPF, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, Cargo, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+//     [Nome, CPF, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, Cargo, Status], (err) => {
+//       if (err) {
+//         return res.status(500).json({ error: 'Erro ao cadastrar gestor' });
+//       }
+//       res.status(201).json({ message: 'Gestor cadastrado com sucesso' });
+//     });
+// };
+
+// export const updateGestor = (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   const { Nome, Telefone, Email } = req.body; // Exemplo de campos que podem ser atualizados
+//   db.query('UPDATE Gestor SET Nome = ?, Telefone = ?, Email = ? WHERE Id = ?', [Nome, Telefone, Email, id], (err) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Erro ao atualizar gestor' });
+//     }
+//     res.json({ message: 'Gestor atualizado com sucesso' });
+//   });
+// };
+
+// export const deleteGestor = (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   db.query('UPDATE Gestor SET Status = "Inativo" WHERE Id = ?', [id], (err) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Erro ao desativar gestor' });
+//     }
+//     res.json({ message: 'Gestor desativado com sucesso' });
+//   });
+// };
+
+// // Funções de controle para Professores
+// export const getProfessores = (req: Request, res: Response) => {
+//   db.query('SELECT * FROM Professor WHERE Status = "Ativo"', (err, rows) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Erro ao buscar professores' });
+//     }
+//     res.json(rows);
+//   });
+// };
+
+// export const getProfessorById = (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   db.query('SELECT * FROM Professor WHERE Id = ? AND Status = "Ativo"', [id], (err, result) => {
+//       if (err) {
+//       res.status(500).json({ error: 'Erro ao buscar Professor' });
+//     } else {
+//       if (!result || Object.keys(result).length === 0) {
+//         res.status(404).json({ error: 'Professor não encontrado' });
+//       } else {
+//         res.json(result);
+//       }
+//     }
+//   });
+// };
+
+// export const createProfessor = (req: Request, res: Response) => {
+//   const { Nome, CPF, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, FormacaoAcademica, Status } = req.body;
+//   db.query('INSERT INTO Professor (Nome, CPF, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, FormacaoAcademica, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+//     [Nome, CPF, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, FormacaoAcademica, Status], (err) => {
+//       if (err) {
+//         return res.status(500).json({ error: 'Erro ao cadastrar professor' });
+//       }
+//       res.status(201).json({ message: 'Professor cadastrado com sucesso' });
+//     });
+// };
+
+// export const updateProfessor = (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   const { Nome, Telefone, Email } = req.body; // Exemplo de campos que podem ser atualizados
+//   db.query('UPDATE Professor SET Nome = ?, Telefone = ?, Email = ? WHERE Id = ?', [Nome, Telefone, Email, id], (err) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Erro ao atualizar professor' });
+//     }
+//     res.json({ message: 'Professor atualizado com sucesso' });
+//   });
+// };
+
+// export const deleteProfessor = (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   db.query('CALL Desativar_Professor(?)', [id], (err) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Erro ao desativar professor' });
+//     }
+//     res.json({ message: 'Professor desativado com sucesso' });
+//   });
+// };
+
+// // Funções de controle para Responsáveis
+// export const getResponsaveis = (req: Request, res: Response) => {
+//   db.query('SELECT * FROM Responsavel WHERE Status = "Ativo"', (err, rows) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Erro ao buscar responsáveis' });
+//     }
+//     res.json(rows);
+//   });
+// };
+
+// export const getResponsavelById = (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   db.query('SELECT * FROM Responsavel WHERE Id = ? AND Status = "Ativo"', [id], (err, result) => {
+//     if (err) {
+//       res.status(500).json({ error: 'Erro ao buscar responsável' });
+//     } else {
+//       if (!result || Object.keys(result).length === 0) {
+//         res.status(404).json({ error: 'Responsável não encontrado' });
+//       } else {
+//         res.json(result);
+//       }
+//     }
+//   });
+// };
+
+// export const createResponsavel = (req: Request, res: Response) => {
+//   const { Nome, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, Parentesco } = req.body;
+//   db.query('INSERT INTO Responsavel (Nome, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, Parentesco) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+//     [Nome, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, Parentesco], (err) => {
+//       if (err) {
+//         return res.status(500).json({ error: 'Erro ao cadastrar responsável' });
+//       }
+//       res.status(201).json({ message: 'Responsável cadastrado com sucesso' });
+//     });
+// };
+
+// export const updateResponsavel = (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   const { Nome, Telefone, Email } = req.body; // Exemplo de campos que podem ser atualizados
+//   db.query('UPDATE Responsavel SET Nome = ?, Telefone = ?, Email = ? WHERE Id = ?', [Nome, Telefone, Email, id], (err) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Erro ao atualizar responsável' });
+//     }
+//     res.json({ message: 'Responsável atualizado com sucesso' });
+//   });
+// };
+
+// export const deleteResponsavel = (req: Request, res: Response) => {
+//   const { id } = req.params;
+//   db.query('UPDATE Responsavel SET Status = "Inativo" WHERE Id = ?', [id], (err) => {
+//     if (err) {
+//       return res.status(500).json({ error: 'Erro ao desativar responsável' });
+//     }
+//     res.json({ message: 'Responsável desativado com sucesso' });
+//   });
+// };
+// // Rotas para Alunos
+// app.get('/alunos', getAlunos);
+// app.get('/alunos/:id', getAlunoById);
+// app.post('/alunos', createAluno);
+// app.put('/alunos/:id', updateAluno);
+// app.delete('/alunos/:id', deleteAluno);
+
+// // Rotas para Gestores
+// app.get('/gestores', getGestores);
+// app.get('/gestores/:id', getGestorById);
+// app.post('/gestores', createGestor);
+// app.put('/gestores/:id', updateGestor);
+// app.delete('/gestores/:id', deleteGestor);
+
+// // Rotas para Professores
+// app.get('/professores', getProfessores);
+// app.get('/professores/:id', getProfessorById);
+// app.post('/professores', createProfessor);
+// app.put('/professores/:id', updateProfessor);
+// app.delete('/professores/:id', deleteProfessor);
+
+// // Rotas para Responsáveis
+// app.get('/responsaveis', getResponsaveis);
+// app.get('/responsaveis/:id', getResponsavelById);
+// app.post('/responsaveis', createResponsavel);
+// app.put('/responsaveis/:id', updateResponsavel);
+// app.delete('/responsaveis/:id', deleteResponsavel);
+
+// // Iniciar o servidor
+// app.listen(PORT, () => {
+//   console.log(`Servidor rodando na porta ${PORT}`);
+// });
+
+
+----------------------------------------------------------------
+Para testar todas as rotas da sua API no Postman, você precisará configurar requisições para cada uma das rotas que você definiu no seu servidor Express. Vou fornecer um guia passo a passo para testar cada uma das rotas que você mencionou.
+
+### Passos para Testar a API no Postman
+
+1. **Inicie o Servidor**: Certifique-se de que seu servidor está em execução. Execute o seguinte comando no terminal:
+
+   ```bash
+   yarn start
+   ```
+
+   Ou, se você estiver usando npm:
+
+   ```bash
+   npm start
+   ```
+
+   O servidor deve estar rodando na porta 3000.
+
+2. **Abra o Postman**: Se você ainda não tem o Postman instalado, você pode baixá-lo e instalá-lo a partir do [site oficial do Postman](https://www.postman.com/downloads/).
+
+3. **Criar uma Nova Requisição no Postman**:
+   - Clique em "New" ou "Create" no Postman.
+   - Selecione "Request".
+
+### Exemplos de Requisições
+
+Aqui estão exemplos de como você pode testar diferentes rotas da sua API:
+
+#### 1. Alunos
+
+- **GET todos os alunos**:
+  - Método: GET
+  - URL: `http://localhost:3000/alunos`
+
+- **POST criar um novo aluno**:
+  - Método: POST
+  - URL: `http://localhost:3000/alunos`
+  - Corpo (JSON):
+    ```json
+{
+  "CPF": "98765432100",
+  "Historico_Medico": "Asma leve",
+  "Contato_de_Emergencia": "11988887777",
+  "Nome": "Ana Beatriz",
+  "Senha": "senhaAna123",
+  "Telefone": "11988887777",
+  "Endereco": "Rua das Flores, 456",
+  "DataNascimento": "2012-03-15",
+  "Genero": "Feminino",
+  "FotoPerfil": null,
+  "Status": "Ativo",
+  "RA": "RA1012"
+}
+    ```
+
+
+#### 2. Gestores
+
+- **GET todos os gestores**:
+  - Método: GET
+  - URL: `http://localhost:3000/gestores`
+
+- **POST criar um novo gestor**:
+  - Método: POST
+  - URL: `http://localhost:3000/gestores`
+  - Corpo (JSON):
+    ```json
+    {
+      "Nome": "Maria Oliveira",
+      "CPF": "12345678902",
+      "Email": "maria.oliveira@example.com",
+      "Senha": "senha456",
+      "Telefone": "11987654322",
+      "DataNascimento": "2001-02-02",
+      "Genero": "Feminino",
+      "Cargo": "Coordenador",
+      "Status": "Ativo"
+    }
+    ```
+
+#### 3. Professores
+
+- **GET todos os professores**:
+  - Método: GET
+  - URL: `http://localhost:3000/professores`
+
+- **POST criar um novo professor**:
+  - Método: POST
+  - URL: `http://localhost:3000/professores`
+  - Corpo (JSON):
+    ```json
+    {
+      "Nome": "Carlos Pereira",
+      "CPF": "12345678903",
+      "Email": "carlos.pereira@example.com",
+      "Senha": "senha789",
+      "Telefone": "11987654323",
+      "DataNascimento": "1995-03-03",
+      "Genero": "Masculino",
+      "FormacaoAcademica": "Licenciatura em Matemática",
+      "Status": "Ativo"
+    }
+    ```
+
+#### 4. Responsáveis
+
+- **GET todos os responsáveis**:
+  - Método: GET
+  - URL: `http://localhost:3000/responsaveis`
+
+- **POST criar um novo responsável**:
+  - Método: POST
+  - URL: `http://localhost:3000/responsaveis`
+  - Corpo (JSON):
+    ```json
+{
+  "responsaveis": [
+    {
+      "id": 1,
+      "nome": "Joana da Silva",
+      "email": "joana.silva@example.com",
+      "telefone": "99887766",
+      "endereco": "Rua A, 123",
+      "dataNascimento": "1975-03-10",
+      "genero": "Feminino",
+      "parentesco": "Mãe"
+    },
+    {
+      "id": 2,
+      "nome": "Carlos Souza",
+      "email": "carlos.souza@example.com",
+      "telefone": "98776655",
+      "endereco": "Rua B, 456",
+      "dataNascimento": "1970-05-22",
+      "genero": "Masculino",
+      "parentesco": "Pai"
+    },
+    {
+      "id": 3,
+      "nome": "Mara Sartori",
+      "email": "marasartori.souza@example.com",
+      "telefone": "998167733",
+      "endereco": "Rua Limoeiro",
+      "dataNascimento": "1980-02-04",
+      "genero": "Feminino",
+      "parentesco": "Mãe"
+    },
+    {
+      "id": 4,
+      "nome": "Nilva Maria",
+      "email": "nilvamaria.neves@example.com",
+      "telefone": "9977284672",
+      "endereco": "Rua Macieira",
+      "dataNascimento": "1980-02-18",
+      "genero": "Feminino",
+      "parentesco": "Mãe"
+    },
+    {
+      "id": 5,
+      "nome": "Roberto Lima",
+      "email": "roberto.lima@example.com",
+      "telefone": "9966775544",
+      "endereco": "Rua das Flores",
+      "dataNascimento": "1975-04-20",
+      "genero": "Masculino",
+      "parentesco": "Pai"
+    },
+    {
+      "id": 6,
+      "nome": "Fernanda Alves",
+      "email": "fernanda.alves@example.com",
+      "telefone": "9955664433",
+      "endereco": "Rua dos Lírios",
+      "dataNascimento": "1985-05-25",
+      "genero": "Feminino",
+      "parentesco": "Mãe"
+    },
+    {
+      "id": 7,
+      "nome": "Cláudio Santos",
+      "email": "claudio.santos@example.com",
+      "telefone": "9944553322",
+      "endereco": "Rua das Acácias",
+      "dataNascimento": "1980-06-30",
+      "genero": "Masculino",
+      "parentesco": "Pai"
+    },
+    {
+      "id": 8,
+      "nome": "Patrícia Gomes",
+      "email": "patricia.gomes@example.com",
+      "telefone": "9933442211",
+      "endereco": "Rua das Palmeiras",
+      "dataNascimento": "1982-07-15",
+      "genero": "Feminino",
+      "parentesco": "Mãe"
+    },
+    {
+      "id": 9,
+      "nome": "Eduardo Ferreira",
+      "email": "eduardo.ferreira@example.com",
+      "telefone": "9922331100",
+      "endereco": "Rua das Rosas",
+      "dataNascimento": "1978-08-10",
+      "genero": "Masculino",
+      "parentesco": "Pai"
+    },
+    {
+      "id": 10,
+      "nome": "Sílvia Martins",
+      "email": "silvia.martins@example.com",
+      "telefone": "9911220099",
+      "endereco": "Rua dos Girassóis",
+      "dataNascimento": "1985-09-05",
+      "genero": "Feminino",
+      "parentesco": "Mãe"
+    }
+  ]
+}
+    ```
+
+#### 5. Notas
+
+- **GET todas as notas**:
+  - Método: GET
+  - URL: `http://localhost:3000/notas`
+
+- **POST criar uma nova nota**:
+  - Método: POST
+  - URL: `http://localhost:3000/notas`
+  - Corpo (JSON):
+    ```json
+    {
+      "alunoId": 1,
+      "valor": 8.5,
+      "professorId": 1
+    }
+    ```
+
+#### 6. Bimestres
+
+- **GET notas por bimestre**:
+  - Método: GET
+  - URL: `http://localhost:3000/bimestres/1` (substitua `1` pelo número do bimestre)
+
+#### 7. Faltas
+
+- **GET todas as faltas**:
+  - Método: GET
+  - URL: `http://localhost:3000/faltas`
+
+- **POST registrar uma nova falta**:
+  - Método: POST
+  - URL: `http://localhost:3000/faltas`
+  - Corpo (JSON):
+    ```json
+    {
+      "alunoId": 1,
+      "data": "2023-10-01",
+      "justificativa": "Doença"
+    }
+    ```
+
+#### 8. Atividades
+
+- **POST criar uma nova atividade**:
+  - Método: POST
+  - URL: `http://localhost:3000/atividades`
+  - Corpo (JSON):
+    ```json
+    {
+      "titulo": "Prova de Matemática",
+      "descricao": "Prova sobre álgebra e geometria",
+      "professorId": 1
+    }
+    ```
+
+- **POST responder uma atividade**:
+  - Método: POST
+  - URL: `http://localhost:3000/atividades/1/responder` (substitua `1` pelo ID da atividade)
+  - Corpo (JSON):
+    ```json
+    {
+      "resposta": "Minha resposta para a prova"
+    }
+    ```
+
+#### 9. Turmas
+
+- **POST criar uma nova turma**:
+  - Método: POST
+  - URL: `http://localhost:3000/turmas`
+  - Corpo (JSON):
+    ```json
+    {
+      "nome": "Turma A",
+      "professorId": 1
+    }
+    ```
+
+#### 10. Disciplinas
+
+- **POST criar uma nova disciplina**:
+  - Método: POST
+  - URL: `http://localhost:3000/disciplinas`
+  - Corpo (JSON):
+    ```json
+    {
+      "nome": "Matemática"
+    }
+    ```
+
+#### 11. Histórico Médico
+
+- **POST criar um novo histórico médico**:
+  - Método: POST
+  - URL: `http://localhost:3000/historico-medico`
+  - Corpo (JSON):
+    ```json
+    {
+      "alunoId": 1,
+      "descricao": "Alergia a pólen"
+    }
+    ```
+
+#### 12. Login
+
+- **POST realizar login**:
+  - Método: POST
+  - URL: `http://localhost:3000/login`
+  - Corpo (JSON):
+    ```json
+    {
+      "usuario": "joao.silva@example.com",
+      "senha": "senha123"
+    }
+    ```
+
+### Enviando a Requisição
+
+1. Após configurar a requisição no Postman, clique no botão "Send" para enviar a requisição.
+2. O Postman mostrará a resposta da sua API na parte inferior da tela.
+3. Verifique o status da resposta (200, 201, 404, 500, etc.) e o corpo da resposta para ver se a operação foi bem-sucedida.
+
+### Conclusão
+
+Usando o Postman, você pode testar todas as rotas da sua API e verificar se tudo está funcionando conforme o esperado. Se você encontrar algum erro ou comportamento inesperado, verifique os logs do servidor para mais informações sobre o que pode estar dando errado. Se precisar de mais ajuda, sinta-se à vontade para perguntar!

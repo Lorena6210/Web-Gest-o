@@ -1,0 +1,79 @@
+/banck-end
+│
+├── /dist
+│   ├── index.js  // Este arquivo deve existir
+│   ├── controllers
+│   ├── db
+│   └── routes
+│
+├── /controllers
+│   ├── notaController.ts
+│   ├── bimestreController.ts
+│   ├── atividadeController.ts
+│   ├── turmaController.ts
+│   ├── disciplinaController.ts
+│   ├── historicoMedicoController.ts
+│   └── loginController.ts
+│   ├── alunoController.ts
+│   ├── professorController.ts
+│   ├── gestorController.ts
+│   └── responsavelController.ts
+│
+├── /db
+│   └── index.ts
+│
+├── /routes
+│   ├── notaRoutes.ts
+│   ├── bimestreRoutes.ts
+│   ├── atividadeRoutes.ts
+│   ├── turmaRoutes.ts
+│   ├── disciplinaRoutes.ts
+│   ├── historicoMedicoRoutes.ts
+│   └── loginRoutes.ts
+│   ├── alunoRoutes.ts
+│   ├── professorRoutes.ts
+│   ├── gestorRoutes.ts
+│   └── responsavelRoutes.ts
+│
+├── index.ts
+│
+├── package.json
+│
+└── tsconfig.json
+├──Front-end
+/
+├── public/                      # Arquivos estáticos
+│   ├── index.html               # Ponto de entrada HTML
+│   └── assets/                  
+│       ├── css/                 # Estilos globais
+│       └── images/              # Imagens
+│
+├── src/                         
+│   ├── models/                  # Tipos e interfaces
+│   │   ├── User.ts              # Ex: interface User { id: string; role: 'aluno' | 'professor'; }
+│   │   └── ApiResponse.ts       # Tipos para respostas da API
+│   │
+│   ├── services/                # Lógica de negócio
+│   │   ├── AuthService.ts       # login(), logout(), validateSession()
+│   │   └── ApiService.ts        # fetchApi() genérico
+│   │
+│   ├── utils/                   # Utilitários
+│   │   ├── authHelpers.ts       # checkAuth(), redirectIfNotLogged()
+│   │   └── roles.ts            # Constantes de roles
+│   │
+│   ├── pages/                   # Páginas (cada uma é um módulo TS)
+│   │   ├── public/              # Páginas públicas
+│   │   │   ├── login.tsx         # Contém a lógica do formulário
+│   │   │   └── register.tsx      
+│   │   │
+│   │   └── protected/          # Páginas que exigem autenticação
+│   │       ├── aluno.tsx         # Tipo: AlunoPage { init(): void; }
+│   │       ├── professor.tsx     
+│   │       └── ...              
+│   │
+│   ├── app.tsx                  # Configuração inicial do app
+│   └── router.tsx               # Controle de navegação
+│
+├── tsconfig.json               # Configuração do TypeScript
+├── package.json                # Scripts e dependências
+└── .env                        # Variáveis de ambiente (ex: API_URL)
