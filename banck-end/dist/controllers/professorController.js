@@ -64,7 +64,7 @@ const createProfessor = (req, res) => {
             return res.status(500).json({ error: 'Erro ao cadastrar professor' });
         }
         const insertId = result.insertId;
-        console.log(' Insert realizado, ID =', insertId);
+        console.log('Insert realizado, ID =', insertId);
         res.status(201).json({
             message: 'Professor cadastrado com sucesso',
             id: insertId

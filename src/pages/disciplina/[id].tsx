@@ -1,6 +1,8 @@
 "use client";
 import React from 'react';
 import {TurmaCompleta, Disciplina } from '@/Types/Turma';
+// import favicon from "./favicon.ico";
+
 
 interface Usuario {
     Nome: string;

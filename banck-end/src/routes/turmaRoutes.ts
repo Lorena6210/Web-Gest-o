@@ -2,16 +2,16 @@ import { Router, Request, Response } from 'express';
 import {
   criarTurma,
   obterTurmaCompleta,
-  listarTurmas,
+  listarTurmasComDetalhes,
   adicionarAluno,
   removerAluno,
   adicionarProfessorTurmaDisciplina,
   adicionarDisciplina,
   adicionarFalta,
-  adicionarNota,
+  adicionarNotaItem,
   adicionarAtividade,
   adicionarEvento,
-  visualizarNotasEFaltas,
+  visualizarNotasItens,
 } from '../controllers/turmaController';
 
 const router = Router();
@@ -20,18 +20,22 @@ const router = Router();
 router.post('/', criarTurma);
 
 // Listar todas as turmas básicas
-router.get('/', listarTurmas);
+router.get('/', listarTurmasComDetalhes);
 
 // 🔹 Buscar uma turma completa por ID (compatível com seu fetchTurmaCompleta)
-router.get('/:id/completa', obterTurmaCompleta);
+router.get('/:id/completa', (req: Request, res: Response) => {
+  obterTurmaCompleta(req, res);
+});
 
 // Adicionar/remover aluno
-router.post('/:idTurma/alunos/:idAluno', adicionarAluno);
+router.post('/:idTurma/alunos/:idAluno', (req: Request, res: Response) => {
+  adicionarAluno(req, res)});
 router.delete('/:idTurma/alunos/:idAluno', removerAluno);
 
 // Adicionar professor e disciplina
-router.post('/:idTurma/professores/:idProfessor/disciplinas/:idDisciplina', adicionarProfessorTurmaDisciplina);
-
+router.post('/:idTurma/professores/:idProfessor/disciplinas/:idDisciplina', (req: Request, res: Response) => {
+  adicionarProfessorTurmaDisciplina(req, res);
+});
 // Adicionar disciplina
 router.post('/:idTurma/disciplinas/:idDisciplina', adicionarDisciplina);
 
@@ -41,7 +45,10 @@ router.post('/:idTurma/alunos/:idAluno/faltas', (req: Request, res: Response) =>
 });
 
 // Adicionar nota
-router.post('/:idTurma/alunos/:idAluno/notas', adicionarNota);
+// Adicionar nota
+router.post('/:idTurma/alunos/:idAluno/notas', (req: Request, res: Response) => {
+  adicionarNotaItem(req, res);
+});
 
 // Adicionar atividade
 router.post('/:idTurma/atividades', adicionarAtividade);
@@ -50,7 +57,7 @@ router.post('/:idTurma/atividades', adicionarAtividade);
 router.post('/:idTurma/eventos', adicionarEvento);
 
 // Visualizar notas e faltas
-router.get('/alunos/:idAluno/notas-faltas', visualizarNotasEFaltas);
+router.get('/alunos/:idAluno/notas-faltas', visualizarNotasItens);
 
 
 export default router;

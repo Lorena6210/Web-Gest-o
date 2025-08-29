@@ -6,6 +6,7 @@ import TurmasCard from './TurmaCard';
 interface Usuario {
   Nome: string;
   Id: number;
+  Tipo: string; // ou outro tipo que seja apropriado
 }
 
 interface AlunoPageProps {

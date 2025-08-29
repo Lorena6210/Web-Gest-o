@@ -2,24 +2,87 @@ import { Request, Response } from 'express';
 import mysql, { RowDataPacket } from 'mysql2';
 import db from '../db';
 
-// Função para usar db.query com promessas e tipagem genérica
+interface Aluno {
+  Id: number;
+  Nome: string;
+  RA: string;
+  FotoPerfil: string;
+}
+
+interface Professor {
+  Id: number;
+  Nome: string;
+  Email: string;
+  FotoPerfil: string;
+  Disciplinas: string;
+  TotalDisciplinas: number;
+}
+
+interface Disciplina {
+  Id: number;
+  Nome: string;
+  Professor: string;
+}
+
+interface Atividade {
+  Id: number;
+  Nome: string;
+  Data: string;
+  Disciplina: number;
+}
+
+interface Prova {
+  Id: number;
+  Nome: string;
+  Data: string;
+  Disciplina: number;
+}
+
+interface Faltas {
+  Id: number;
+  Nome: string;
+  Data: string;
+  Disciplina: number;
+}
+
+interface Turma {
+  Id: number;
+  Nome?: string;
+  AnoLetivo?: string;
+  Serie?: string;
+  Turno?: string;
+  Sala?: string;
+  alunos?: Aluno[];
+  professores?: Professor[];
+  disciplinas?: Disciplina[];
+  atividades?: Atividade[];
+  provas?: Prova[];
+  faltas?: Faltas[];
+}
+
+// Helper genérico com Promise
 const queryAsync = <T>(sql: string, params?: unknown[]): Promise<T> => {
   return new Promise<T>((resolve, reject) => {
-    db.query(sql, params ?? [], (err, results) => {
+    db.query(sql, params ?? [], (err: Error | null, results: RowDataPacket[]) => {
       if (err) return reject(err);
       resolve(results as T);
     });
   });
 };
 
-// Função auxiliar para garantir existência de registros
+// Descobre as colunas existentes de uma tabela
+async function getTableColumns(table: string): Promise<Set<string>> {
+  const rows = await queryAsync<RowDataPacket[]>(`SHOW COLUMNS FROM ${table}`);
+  return new Set(rows.map(r => r.Field as string));
+}
+
+// Garante existência
 export const garantirExistencia = (
   table: string,
   idOuNome: number | string,
   camposAdicionais: Record<string, unknown> = {}
 ): Promise<number> => {
 
-  // Se for número, trata como ID
   if (typeof idOuNome === 'number') {
     return queryAsync<RowDataPacket[]>(`SELECT Id FROM ${table} WHERE Id = ?`, [idOuNome])
       .then(results => {
@@ -28,7 +91,6 @@ export const garantirExistencia = (
       });
   }
 
-  // Se for string, trata como Nome
   return queryAsync<RowDataPacket[]>(`SELECT Id FROM ${table} WHERE Nome = ?`, [idOuNome])
     .then(results => {
       if (results.length > 0) return results[0].Id;
@@ -48,18 +110,16 @@ export const garantirExistencia = (
     });
 };
 
-// Criar turma com todos os relacionamentos
+// Criar turma
 export function criarTurma(req: Request, res: Response) {
   const { nome, serie, anoLetivo, turno, sala, capacidadeMaxima, professores, alunos, disciplinas } = req.body;
 
-  // Garantir existência dos relacionamentos
   Promise.all([
     garantirExistencia('Serie', serie),
     garantirExistencia('Turno', turno),
     garantirExistencia('Sala', sala)
   ])
     .then(([idSerie, idTurno, idSala]) => {
-      // Inserir turma principal
       return queryAsync<mysql.OkPacket>(
         `INSERT INTO Turma (Nome, Id_Serie, AnoLetivo, Id_Turno, Id_Sala, CapacidadeMaxima)
          VALUES (?, ?, ?, ?, ?, ?)`,
@@ -69,9 +129,7 @@ export function criarTurma(req: Request, res: Response) {
     .then(turmaResult => {
       const idTurma = turmaResult.insertId;
 
-      // Processar relacionamentos em paralelo
       return Promise.all([
-        // Professores (com disciplinas)
         professores && professores.length > 0 && Promise.all(
           professores.map((prof: { id: number; disciplinas: number[] }) => {
             return Promise.all(
@@ -81,21 +139,17 @@ export function criarTurma(req: Request, res: Response) {
                    VALUES (?, ?, ?, 'Ativo')
                    ON DUPLICATE KEY UPDATE Status = 'Ativo'`,
                   [prof.id, idTurma, idDisciplina]
-                ) 
+                )
               )
             );
           })
         ),
-
-        // Alunos
         alunos && alunos.length > 0 && queryAsync(
           `INSERT INTO Aluno_Turma (Id_Aluno, Id_Turma, Status)
            VALUES ? 
            ON DUPLICATE KEY UPDATE Status = 'Ativo'`,
           [alunos.map((id: number) => [id, idTurma, 'Ativo'])]
         ),
-        
-        // Disciplinas da turma
         disciplinas && disciplinas.length > 0 && queryAsync(
           `INSERT INTO Turma_Disciplina (Id_Turma, Id_Disciplina)
            VALUES ?
@@ -105,178 +159,34 @@ export function criarTurma(req: Request, res: Response) {
       ]);
     })
     .then(() => {
-      res.status(201).json({ 
-        success: true,
-        message: 'Turma criada com sucesso'
-      });
+      res.status(201).json({ success: true, message: 'Turma criada com sucesso' });
     })
     .catch(error => {
       const message = error instanceof Error ? error.message : 'Erro desconhecido';
       console.error('Erro ao criar turma:', message);
-      res.status(500).json({ 
-        success: false,
-        message: 'Erro ao criar turma',
-        error: message
-      });
+      res.status(500).json({ success: false, message: 'Erro ao criar turma', error: message });
     });
 }
 
-// Obter turma com todos os relacionamentos
-export function obterTurmaCompleta(req: Request, res: Response) {
-  const idTurma = req.params.id;
-
-  // Obter informações básicas da turma
-  queryAsync<RowDataPacket[]>(`
-    SELECT t.*, s.Nome AS Serie, tr.Nome AS Turno, sl.Nome AS Sala
-    FROM Turma t
-    LEFT JOIN Serie s ON t.Id_Serie = s.Id
-    LEFT JOIN Turno tr ON t.Id_Turno = tr.Id
-    LEFT JOIN Sala sl ON t.Id_Sala = sl.Id
-    WHERE t.Id = ? AND t.Status = 'Ativo'
-  `, [idTurma])
-  .then((turma: RowDataPacket[]) => {
-    if (turma.length === 0) {
-      res.status(404).json({
-        success: false,
-        message: 'Turma não encontrada'
-      });
-      return;
-    }
-
-    // Obter todos os relacionamentos em paralelo
-    return Promise.all([
-      // Alunos da turma (sem a coluna Email)
-      queryAsync<RowDataPacket[]>(`
-        SELECT a.Id, a.Nome, a.RA, a.FotoPerfil
-        FROM Aluno a
-        INNER JOIN Aluno_Turma at ON at.Id_Aluno = a.Id
-        WHERE at.Id_Turma = ? AND at.Status = 'Ativo'
-        ORDER BY a.Nome
-      `, [idTurma]),
-      
-      // Professores com suas disciplinas na turma
-      queryAsync<RowDataPacket[]>(`
-        SELECT p.Id, p.Nome, p.Email, p.FotoPerfil, 
-              GROUP_CONCAT(d.Nome SEPARATOR ', ') AS Disciplinas,
-              COUNT(d.Id) AS TotalDisciplinas
-        FROM Professor p
-        INNER JOIN Professor_Turma_Disciplina ptd ON ptd.Id_Professor = p.Id
-        INNER JOIN Disciplina d ON ptd.Id_Disciplina = d.Id
-        WHERE ptd.Id_Turma = ? AND ptd.Status = 'Ativo'
-        GROUP BY p.Id
-        ORDER BY p.Nome
-      `, [idTurma]),
-      
-      // Disciplinas da turma
-      queryAsync<RowDataPacket[]>(`
-        SELECT d.Id, d.Nome, d.Codigo, d.CargaHoraria
-        FROM Disciplina d
-        INNER JOIN Turma_Disciplina td ON td.Id_Disciplina = d.Id
-        WHERE td.Id_Turma = ?
-        ORDER BY d.Nome
-      `, [idTurma])
-    ])
-    .then(([alunos, professoresComDisciplinas, disciplinas]) => {
-      res.json({
-        success: true,
-        data: {
-          ...turma[0],
-          alunos,
-          professores: professoresComDisciplinas,
-          disciplinas
-        }
-      });
-    });
-  })
-  .catch(error => {
-    const message = error instanceof Error ? error.message : 'Erro desconhecido';
-    console.error('Erro ao obter turma completa:', message);
-    res.status(500).json({ 
-      success: false,
-      message: 'Erro ao obter turma completa',
-      error: message
-    });
-  });
-}
-
-export function listarTurmas(req: Request, res: Response) {
-  queryAsync<RowDataPacket[]>(`
-    SELECT t.Id, t.Nome, s.Nome AS Serie, t.AnoLetivo, tr.Nome AS Turno,
-           COUNT(DISTINCT at.Id_Aluno) AS TotalAlunos,
-           COUNT(DISTINCT ptd.Id_Professor) AS TotalProfessores
-    FROM Turma t
-    LEFT JOIN Serie s ON t.Id_Serie = s.Id
-    LEFT JOIN Turno tr ON t.Id_Turno = tr.Id
-    LEFT JOIN Aluno_Turma at ON at.Id_Turma = t.Id AND at.Status = 'Ativo'
-    LEFT JOIN Professor_Turma_Disciplina ptd ON ptd.Id_Turma = t.Id AND ptd.Status = 'Ativo'
-    WHERE t.Status = 'Ativo'
-    GROUP BY t.Id
-    ORDER BY t.Nome
-  `)
-    .then(async turmas => {
-      // Para cada turma, buscar alunos, professores com disciplinas e disciplinas da turma
-      const turmasComRelacionamentos = await Promise.all(
-        turmas.map(async turma => {
-          const [alunos, professores, disciplinas] = await Promise.all([
-            queryAsync<RowDataPacket[]>(`
-              SELECT a.Id, a.Nome, a.RA, a.FotoPerfil
-              FROM Aluno a
-              INNER JOIN Aluno_Turma at ON at.Id_Aluno = a.Id
-              WHERE at.Id_Turma = ? AND at.Status = 'Ativo'
-              ORDER BY a.Nome
-            `, [turma.Id]),
-
-            queryAsync<RowDataPacket[]>(`
-              SELECT p.Id, p.Nome, p.Email, p.FotoPerfil, 
-                     GROUP_CONCAT(d.Nome SEPARATOR ', ') AS Disciplinas,
-                     COUNT(d.Id) AS TotalDisciplinas
-              FROM Professor p
-              INNER JOIN Professor_Turma_Disciplina ptd ON ptd.Id_Professor = p.Id
-              INNER JOIN Disciplina d ON ptd.Id_Disciplina = d.Id
-              WHERE ptd.Id_Turma = ? AND ptd.Status = 'Ativo'
-              GROUP BY p.Id
-              ORDER BY p.Nome
-            `, [turma.Id]),
-
-            queryAsync<RowDataPacket[]>(`
-              SELECT d.Id, d.Nome, d.Codigo, d.CargaHoraria
-              FROM Disciplina d
-              INNER JOIN Turma_Disciplina td ON td.Id_Disciplina = d.Id
-              WHERE td.Id_Turma = ?
-              ORDER BY d.Nome
-            `, [turma.Id])
-          ]);
-
-          return { ...turma, alunos, professores, disciplinas };
-        })
-      );
-
-      res.json({ 
-        success: true,
-        data: turmasComRelacionamentos
-      });
-    })
-    .catch(error => {
-      const message = error instanceof Error ? error.message : 'Erro desconhecido';
-      console.error('Erro ao listar turmas:', message);
-      res.status(500).json({ 
-        success: false,
-        message: 'Erro ao listar turmas',
-        error: message
-      });
-    });
-}
-
-
-// Adicionar aluno à turma
+// Adicionar/remover aluno
 export function adicionarAluno(req: Request, res: Response) {
   const { idTurma, idAluno } = req.params;
 
-  queryAsync<mysql.OkPacket>(`
+  // Verifique se os parâmetros estão definidos
+  if (!idTurma || !idAluno) {
+    return res.status(400).json({
+      success: false,
+      message: 'idTurma e idAluno são obrigatórios'
+    });
+  }
+
+  const sql = `
     INSERT INTO Aluno_Turma (Id_Aluno, Id_Turma, Status)
     VALUES (?, ?, 'Ativo')
     ON DUPLICATE KEY UPDATE Status = 'Ativo'
-  `, [idAluno, idTurma])
+  `;
+
+  queryAsync<mysql.OkPacket>(sql, [idAluno, idTurma])
     .then(result => {
       if (result.affectedRows === 0) {
         return res.status(400).json({
@@ -301,7 +211,7 @@ export function adicionarAluno(req: Request, res: Response) {
     });
 }
 
-// Remover aluno da turma
+
 export function removerAluno(req: Request, res: Response) {
   const { idTurma, idAluno } = req.params;
 
@@ -327,9 +237,17 @@ export function removerAluno(req: Request, res: Response) {
     });
 }
 
-// Adicionar professor a uma turma e disciplina
+// Professor x Turma x Disciplina
 export function adicionarProfessorTurmaDisciplina(req: Request, res: Response) {
   const { idTurma, idProfessor, idDisciplina } = req.params;
+
+  // Verifique se os parâmetros estão definidos
+  if (!idTurma || !idProfessor || !idDisciplina) {
+    return res.status(400).json({
+      success: false,
+      message: 'idTurma, idProfessor e idDisciplina são obrigatórios'
+    });
+  }
 
   const sql = `
     INSERT INTO Professor_Turma_Disciplina (Id_Professor, Id_Turma, Id_Disciplina, Status)
@@ -362,7 +280,7 @@ export function adicionarProfessorTurmaDisciplina(req: Request, res: Response) {
     });
 }
 
-// Adicionar disciplina à turma
+// Adicionar disciplina
 export function adicionarDisciplina(req: Request, res: Response) {
   const { idTurma, idDisciplina } = req.params;
 
@@ -388,101 +306,65 @@ export function adicionarDisciplina(req: Request, res: Response) {
     });
 }
 
-// Adicionar falta a um aluno na turma
+// Falta
 export async function adicionarFalta(req: Request, res: Response) {
-    const { idTurma, idAluno } = req.params;
-    const { idDisciplina, dataFalta, justificada = false } = req.body;
-
-    // Validação avançada
-    if (typeof idDisciplina === 'undefined') {
-        return res.status(400).json({
-            success: false,
-            message: "O campo 'idDisciplina' é obrigatório",
-            requiredFields: {
-                idDisciplina: "number (ID da disciplina)",
-                dataFalta: "string (formato YYYY-MM-DD)",
-                justificada: "boolean (opcional)"
-            }
-        });
-    }
-
-    if (!dataFalta || !/^\d{4}-\d{2}-\d{2}$/.test(dataFalta)) {
-        return res.status(400).json({
-            success: false,
-            message: "O campo 'dataFalta' é obrigatório no formato YYYY-MM-DD",
-            example: {
-                "idDisciplina": 1,
-                "dataFalta": "2023-11-20",
-                "justificada": false
-            }
-        });
-    }
-
-    try {
-        // Verificar duplicata
-        const [existing] = await queryAsync<RowDataPacket[]>(`
-            SELECT Id FROM Falta 
-            WHERE Id_Aluno = ? AND Id_Turma = ? 
-            AND Id_Disciplina = ? AND DataFalta = ?
-        `, [idAluno, idTurma, idDisciplina, dataFalta]);
-
-        if (existing) {
-            await queryAsync(`UPDATE Falta SET Justificada = ? WHERE Id = ?`, 
-                [justificada, existing.Id]);
-            return res.json({ 
-                success: true,
-                message: "Falta atualizada com sucesso" 
-            });
-        }
-
-        // Inserir nova falta
-        await queryAsync(`
-            INSERT INTO Falta (Id_Aluno, Id_Turma, Id_Disciplina, DataFalta, Justificada)
-            VALUES (?, ?, ?, ?, ?)
-        `, [idAluno, idTurma, idDisciplina, dataFalta, justificada]);
-
-        res.json({ 
-            success: true,
-            message: "Falta registrada com sucesso" 
-        });
-
-    } catch (error) {
-        console.error("Erro no banco de dados:", error);
-        res.status(500).json({
-            success: false,
-            message: "Erro ao processar a falta",
-            error: error instanceof Error ? error.message : "Erro desconhecido"
-        });
-    }
-}
-
-// Adicionar nota a um aluno na turma
-export function adicionarNota(req: Request, res: Response) {
   const { idTurma, idAluno } = req.params;
-  const { idBimestre, valor } = req.body;
+  const { idDisciplina, dataFalta, justificada = false } = req.body;
 
-  queryAsync<mysql.OkPacket>(`
-    INSERT INTO Nota (Id_Aluno, Id_Turma, Id_Bimestre, Valor)
-    VALUES (?, ?, ?, ?)
-  `, [idAluno, idTurma, idBimestre, valor])
-    .then(() => {
-      res.json({
-        success: true,
-        message: 'Nota adicionada com sucesso'
-      });
-    })
-    .catch(error => {
-      const message = error instanceof Error ? error.message : 'Erro desconhecido';
-      console.error('Erro ao adicionar nota:', message);
-      res.status(500).json({
-        success: false,
-        message: 'Erro ao adicionar nota',
-        error: message
-      });
+  if (!idDisciplina || !dataFalta) {
+    return res.status(400).json({
+      success: false,
+      message: 'É necessário informar idDisciplina e dataFalta'
     });
+  }
+
+  try {
+    const aluno = await queryAsync<RowDataPacket[]>(`
+      SELECT * FROM Aluno_Turma 
+      WHERE Id_Aluno = ? AND Id_Turma = ? AND Status = 'Ativo'
+    `, [idAluno, idTurma]);
+
+    if (aluno.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Aluno não encontrado nesta turma ou está inativo'
+      });
+    }
+
+    const disciplina = await queryAsync<RowDataPacket[]>(`
+      SELECT * FROM Turma_Disciplina
+      WHERE Id_Turma = ? AND Id_Disciplina = ?
+    `, [idTurma, idDisciplina]);
+
+    if (disciplina.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Disciplina não encontrada nesta turma'
+      });
+    }
+
+    await queryAsync<mysql.OkPacket>(`
+      INSERT INTO Falta (Id_Aluno, Id_Turma, Id_Disciplina, DataFalta, Justificada)
+      VALUES (?, ?, ?, ?, ?)
+    `, [idAluno, idTurma, idDisciplina, dataFalta, justificada ? 1 : 0]);
+
+    res.json({
+      success: true,
+      message: 'Falta adicionada com sucesso'
+    });
+    
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erro desconhecido';
+    console.error('Erro ao adicionar falta:', message);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao adicionar falta',
+      error: message
+    });
+  }
 }
 
-// Adicionar atividade à turma
+// Atividade
 export function adicionarAtividade(req: Request, res: Response) {
   const { idTurma } = req.params;
   const { titulo, descricao, dataEntrega, idProfessor } = req.body;
@@ -508,7 +390,7 @@ export function adicionarAtividade(req: Request, res: Response) {
     });
 }
 
-// Adicionar evento à turma
+// Evento
 export function adicionarEvento(req: Request, res: Response) {
   const { titulo, descricao, dataInicio, dataFim, local, publicoAlvo } = req.body;
 
@@ -533,41 +415,280 @@ export function adicionarEvento(req: Request, res: Response) {
     });
 }
 
-// Visualizar notas e faltas de um aluno
-export function visualizarNotasEFaltas(req: Request, res: Response) {
+// Notas e faltas por aluno
+export async function visualizarNotasItens(req: Request, res: Response) {
   const { idAluno } = req.params;
 
-  Promise.all([
-    queryAsync<RowDataPacket[]>(`
-      SELECT n.Id, n.Valor, b.Nome AS Bimestre
-      FROM Nota n
-      INNER JOIN Bimestre b ON n.Id_Bimestre = b.Id
+  try {
+    const notas = await queryAsync<RowDataPacket[]>(`
+      SELECT n.Id, n.Valor, n.Tipo, 
+             CASE WHEN n.Tipo = 'Atividade' THEN a.Titulo ELSE p.Nome END AS NomeItem,
+             CASE WHEN n.Tipo = 'Atividade' THEN a.DataEntrega ELSE p.Data END AS Data
+      FROM NotaItem n
+      LEFT JOIN Atividade a ON n.Tipo = 'Atividade' AND n.Id_Item = a.Id
+      LEFT JOIN Prova p ON n.Tipo = 'Prova' AND n.Id_Item = p.Id
       WHERE n.Id_Aluno = ?
-    `, [idAluno]),
+      ORDER BY Data
+    `, [idAluno]);
 
-    queryAsync<RowDataPacket[]>(`
-      SELECT f.DataFalta, f.Justificada, d.Nome AS Disciplina
-      FROM Falta f
-      INNER JOIN Disciplina d ON f.Id_Disciplina = d.Id
-      WHERE f.Id_Aluno = ?
-    `, [idAluno])
-  ])
-  .then(([notas, faltas]) => {
+    res.json({ success: true, data: notas });
+  } catch (error) {
+    console.error('Erro ao buscar notas:', error);
+    res.status(500).json({ success: false, message: 'Erro ao buscar notas', error: error instanceof Error ? error.message : error });
+  }
+}
+
+
+// Turma completa
+// Turma completa
+export async function obterTurmaCompleta(req: Request, res: Response) {
+  const { id } = req.params; // Obter o ID da turma a partir dos parâmetros da requisição
+
+  try {
+    // Descobrir colunas reais da tabela Prova (para montar SELECT sem quebrar)
+    const provaCols = await getTableColumns('Prova');
+
+    const provaTituloCol =
+      provaCols.has('Titulo') ? 'pr.Titulo' :
+      provaCols.has('Nome') ? 'pr.Nome' : 'NULL';
+
+    const provaDescricaoCol =
+      provaCols.has('Descricao') ? 'pr.Descricao' : 'NULL';
+
+    const provaDataCol =
+      provaCols.has('DataRealizacao') ? 'pr.DataRealizacao' :
+      provaCols.has('Data') ? 'pr.Data' :
+      provaCols.has('DataEntrega') ? 'pr.DataEntrega' : 'NULL';
+
+    const provaValorCol =
+      provaCols.has('ValorMaximo') ? 'pr.ValorMaximo' :
+      provaCols.has('Valor') ? 'pr.Valor' : 'NULL';
+
+    const hasIdDisciplina = provaCols.has('Id_Disciplina');
+    const hasIdProfessor  = provaCols.has('Id_Professor');
+    const hasIdTurma      = provaCols.has('Id_Turma');
+
+    const joinProfessor = hasIdProfessor ? 'LEFT JOIN Professor p ON pr.Id_Professor = p.Id' : '';
+    const joinDisciplina = hasIdDisciplina ? 'LEFT JOIN Disciplina d ON pr.Id_Disciplina = d.Id' : '';
+
+    const campoProfessor = hasIdProfessor ? 'p.Nome AS Professor' : 'NULL AS Professor';
+    const campoDisciplina = hasIdDisciplina ? 'd.Nome AS Disciplina' : 'NULL AS Disciplina';
+
+    const whereTurma = hasIdTurma ? 'WHERE pr.Id_Turma = ?' : '';
+    const orderProva = provaDataCol !== 'NULL' ? `ORDER BY ${provaDataCol}` : 'ORDER BY pr.Id';
+
+    // Buscar a turma específica pelo ID
+    const turmas = await queryAsync<RowDataPacket[]>(`
+      SELECT t.Id, t.Nome, t.AnoLetivo, s.Nome AS Serie, tr.Nome AS Turno, sl.Nome AS Sala
+      FROM Turma t
+      LEFT JOIN Serie s ON t.Id_Serie = s.Id
+      LEFT JOIN Turno tr ON t.Id_Turno = tr.Id
+      LEFT JOIN Sala sl ON t.Id_Sala = sl.Id
+      WHERE t.Id = ? AND t.Status = 'Ativo'
+    `, [id]);
+
+    if (turmas.length === 0) {
+      return res.status(404).json({ success: false, message: 'Turma não encontrada' });
+    }
+
+    const turma = turmas[0]; // Obter a turma encontrada
+
+    // Buscar detalhes da turma
+    const [alunos, professores, disciplinas, atividades, provas, faltas] = await Promise.all([
+      // Alunos
+      queryAsync<RowDataPacket[]>(`
+        SELECT a.Id, a.Nome, a.RA, a.FotoPerfil
+        FROM Aluno a
+        INNER JOIN Aluno_Turma at ON at.Id_Aluno = a.Id
+        WHERE at.Id_Turma = ? AND at.Status = 'Ativo'
+        ORDER BY a.Nome
+      `, [turma.Id]),
+
+      // Professores com disciplinas
+      queryAsync<RowDataPacket[]>(`
+        SELECT p.Id, p.Nome, p.Email, p.FotoPerfil, 
+               GROUP_CONCAT(d.Nome SEPARATOR ', ') AS Disciplinas,
+               COUNT(d.Id) AS TotalDisciplinas
+        FROM Professor p
+        INNER JOIN Professor_Turma_Disciplina ptd ON ptd.Id_Professor = p.Id
+        INNER JOIN Disciplina d ON ptd.Id_Disciplina = d.Id
+        WHERE ptd.Id_Turma = ? AND ptd.Status = 'Ativo'
+        GROUP BY p.Id, p.Nome, p.Email, p.FotoPerfil
+        ORDER BY p.Nome
+      `, [turma.Id]),
+
+      // Disciplinas
+      queryAsync<RowDataPacket[]>(`
+        SELECT d.Id, d.Nome, d.Codigo, d.CargaHoraria
+        FROM Disciplina d
+        INNER JOIN Turma_Disciplina td ON td.Id_Disciplina = d.Id
+        WHERE td.Id_Turma = ?
+        ORDER BY d.Nome
+      `, [turma.Id]),
+
+      // Atividades
+      queryAsync<RowDataPacket[]>(`
+        SELECT a.Id, a.Titulo, a.Descricao, a.DataEntrega, a.DataCriacao, p.Nome AS Professor
+        FROM Atividade a
+        INNER JOIN Professor p ON a.Id_Professor = p.Id
+        WHERE a.Id_Turma = ?
+        ORDER BY a.DataEntrega
+      `, [turma.Id]),
+
+      // Provas
+      queryAsync<RowDataPacket[]>(`
+        SELECT 
+          pr.Id,
+          ${provaTituloCol}     AS Titulo,
+          ${provaDescricaoCol}  AS Descricao,
+          ${provaDataCol}       AS Data,
+          ${provaValorCol}      AS ValorMaximo,
+          ${campoProfessor},
+          ${campoDisciplina}
+        FROM Prova pr
+        ${joinProfessor}
+        ${joinDisciplina}
+        ${whereTurma}
+        ${orderProva}
+      `, hasIdTurma ? [turma.Id] : []),
+
+      // Faltas
+      queryAsync<RowDataPacket[]>(`
+        SELECT f.Id, f.DataFalta, f.Justificada, a.Nome AS Aluno, d.Nome AS Disciplina
+        FROM Falta f
+        INNER JOIN Aluno a ON f.Id_Aluno = a.Id
+        INNER JOIN Disciplina d ON f.Id_Disciplina = d.Id
+        WHERE f.Id_Turma = ?
+        ORDER BY f.DataFalta
+      `, [turma.Id])
+    ]);
+
+    const turmaCompleta = { ...turma, alunos, professores, disciplinas, atividades, provas, faltas };
+
     res.json({
       success: true,
-      data: {
-        notas,
-        faltas
-      }
+      data: turmaCompleta
     });
-  })
-  .catch(error => {
+
+  } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro desconhecido';
-    console.error('Erro ao visualizar notas e faltas:', message);
-    res.status(500).json({
+    console.error('Erro ao obter turma completa:', message);
+    res.status(500).json({ 
       success: false,
-      message: 'Erro ao visualizar notas e faltas',
+      message: 'Erro ao obter turma completa',
       error: message
     });
+  }
+}
+
+
+// Listar turmas com detalhes completos
+export async function listarTurmasComDetalhes(req: Request, res: Response) {
+  try {
+    const turmas: Turma[] = (await queryAsync<RowDataPacket[]>(`
+      SELECT t.Id, t.Nome, t.AnoLetivo, s.Nome AS Serie, tr.Nome AS Turno, sl.Nome AS Sala
+      FROM Turma t
+      LEFT JOIN Serie s ON t.Id_Serie = s.Id
+      LEFT JOIN Turno tr ON t.Id_Turno = tr.Id
+      LEFT JOIN Sala sl ON t.Id_Sala = sl.Id
+      WHERE t.Status = 'Ativo'
+      ORDER BY t.Nome
+    `)).map(row => ({
+      Id: row.Id,
+      Nome: row.Nome,
+      AnoLetivo: row.AnoLetivo,
+      Serie: row.Serie,
+      Turno: row.Turno,
+      Sala: row.Sala
+    }));
+
+    const turmasCompletas = await Promise.all(
+      turmas.map(async turma => {
+        const [professores, disciplinas, atividades, provas, faltas, alunos] = await Promise.all([
+          queryAsync<RowDataPacket[]>(`
+            SELECT p.Id, p.Nome, p.Email, p.FotoPerfil,
+                   GROUP_CONCAT(d.Nome SEPARATOR ', ') AS Disciplinas
+            FROM Professor p
+            INNER JOIN Professor_Turma_Disciplina ptd ON ptd.Id_Professor = p.Id
+            INNER JOIN Disciplina d ON ptd.Id_Disciplina = d.Id
+            WHERE ptd.Id_Turma = ? AND ptd.Status = 'Ativo'
+            GROUP BY p.Id
+            ORDER BY p.Nome
+          `, [turma.Id]),
+          queryAsync<RowDataPacket[]>(`
+            SELECT d.Id, d.Nome
+            FROM Disciplina d
+            INNER JOIN Turma_Disciplina td ON td.Id_Disciplina = d.Id
+            WHERE td.Id_Turma = ?
+            ORDER BY d.Nome
+          `, [turma.Id]),
+          queryAsync<RowDataPacket[]>(`
+            SELECT a.Id, a.Titulo, a.Descricao, a.DataEntrega, p.Nome AS Professor
+            FROM Atividade a
+            INNER JOIN Professor p ON a.Id_Professor = p.Id
+            WHERE a.Id_Turma = ?
+            ORDER BY a.DataEntrega
+          `, [turma.Id]),
+          queryAsync<RowDataPacket[]>(`
+            SELECT pr.Id, pr.Titulo, pr.Descricao, pr.DataEntrega, p.Nome AS Professor, d.Nome AS Disciplina
+            FROM Prova pr
+            INNER JOIN Professor p ON pr.Id_Professor = p.Id
+            INNER JOIN Disciplina d ON pr.Id_Disciplina = d.Id
+            WHERE pr.Id_Turma = ?
+            ORDER BY pr.DataEntrega
+          `, [turma.Id]),
+          queryAsync<RowDataPacket[]>(`
+            SELECT f.Id, a.Nome AS NomeAluno, f.DataFalta AS Data, d.Nome AS Disciplina
+            FROM Falta f
+            INNER JOIN Aluno a ON f.Id_Aluno = a.Id
+            INNER JOIN Disciplina d ON f.Id_Disciplina = d.Id
+            WHERE f.Id_Turma = ?
+          `, [turma.Id]),
+          queryAsync<RowDataPacket[]>(`
+            SELECT a.Id, a.Nome, a.RA, a.FotoPerfil
+            FROM Aluno a
+            INNER JOIN Aluno_Turma at ON at.Id_Aluno = a.Id
+            WHERE at.Id_Turma = ? AND at.Status = 'Ativo'
+          `, [turma.Id])
+        ]);
+
+        return { ...turma, professores, disciplinas, atividades, provas, faltas, alunos };
+      })
+    );
+
+    res.status(200).json({ success: true, turmas: turmasCompletas });
+  } catch (error) {
+    console.error('Erro ao listar turmas com detalhes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao listar turmas com detalhes',
+      error: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+}
+
+export function adicionarNotaItem(req: Request, res: Response) {
+  const { idTurma, idAluno } = req.params;
+  const { tipo, idItem, valor } = req.body; // tipo: 'Atividade' ou 'Prova'
+
+  if (!tipo || !['Atividade', 'Prova'].includes(tipo)) {
+    return res.status(400).json({ success: false, message: 'Tipo inválido' });
+  }
+
+  if (!idItem || valor === undefined) {
+    return res.status(400).json({ success: false, message: 'idItem e valor são obrigatórios' });
+  }
+
+  queryAsync<mysql.OkPacket>(`
+    INSERT INTO NotaItem (Id_Aluno, Id_Turma, Tipo, Id_Item, Valor)
+    VALUES (?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE Valor = ?
+  `, [idAluno, idTurma, tipo, idItem, valor, valor])
+  .then(() => {
+    res.json({ success: true, message: 'Nota adicionada com sucesso' });
+  })
+  .catch(error => {
+    console.error('Erro ao adicionar nota:', error);
+    res.status(500).json({ success: false, message: 'Erro ao adicionar nota', error: error instanceof Error ? error.message : error });
   });
 }

@@ -49,7 +49,6 @@ export const getProfessorById = (req: Request, res: Response) => {
     });
   });
 };
-
 export const createProfessor = (req: Request, res: Response) => {
   const { Nome, CPF, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil, FormacaoAcademica, Status } = req.body;
 
@@ -61,28 +60,29 @@ export const createProfessor = (req: Request, res: Response) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-db.query(
-  query,
-  [Nome, CPF, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil || null, FormacaoAcademica || null, Status || 'Ativo'],
-  (err, result) => {
-    if (err) {
-      console.error('Erro ao cadastrar professor:', err);
-      if (typeof err === 'object' && err !== null && 'code' in err && err.code === 'ER_DUP_ENTRY') {
-        return res.status(409).json({ error: 'CPF ou Email já cadastrado' });
+  db.query(
+    query,
+    [Nome, CPF, Email, Senha, Telefone, DataNascimento, Genero, FotoPerfil || null, FormacaoAcademica || null, Status || 'Ativo'],
+    (err, result) => {
+      if (err) {
+        console.error('Erro ao cadastrar professor:', err);
+        if (typeof err === 'object' && err !== null && 'code' in err && err.code === 'ER_DUP_ENTRY') {
+          return res.status(409).json({ error: 'CPF ou Email já cadastrado' });
+        }
+        return res.status(500).json({ error: 'Erro ao cadastrar professor' });
       }
-      return res.status(500).json({ error: 'Erro ao cadastrar professor' });
+
+      const insertId = (result as import('mysql2').ResultSetHeader).insertId;
+      console.log('Insert realizado, ID =', insertId);
+
+      res.status(201).json({
+        message: 'Professor cadastrado com sucesso',
+        id: insertId
+      });
     }
-
-    const insertId = (result as import('mysql2').ResultSetHeader).insertId;
-    console.log(' Insert realizado, ID =', insertId);
-
-    res.status(201).json({
-      message: 'Professor cadastrado com sucesso',
-      id: insertId
-    });
-  }
-);
+  );
 };
+
 
 export const updateProfessor = (req: Request, res: Response) => {
   const { id } = req.params;

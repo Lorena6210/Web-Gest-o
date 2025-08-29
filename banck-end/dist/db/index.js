@@ -7,8 +7,8 @@ const mysql2_1 = __importDefault(require("mysql2"));
 const db = mysql2_1.default.createConnection({
     host: 'localhost',
     user: 'admin',
-    password: 'senha123',
-    database: 'EduTechHub'
+    password: 'senha@123',
+    database: 'ControlHub'
 });
 db.connect((err) => {
     if (err) {

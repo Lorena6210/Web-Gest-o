@@ -9,6 +9,10 @@ export type Usuario = {
   Tipo: "aluno" | "professor" | "responsavel" | "gestor";
 };
 
+// interface ResponseData {
+//   usuario?: Usuario; // A propriedade 'usuario' é opcional
+// }
+
 export default async function jwtLoginStatus(
   ctx: GetServerSidePropsContext
 ): Promise<Usuario | null> {
@@ -26,8 +30,8 @@ export default async function jwtLoginStatus(
       },
     });
 
-    if (response.data && response.data.usuario) {
-      return response.data.usuario as Usuario;
+    if ((response.data as { usuario: Usuario }).usuario) {
+      return (response.data as { usuario: Usuario }).usuario;
     }
     return null;
   } catch (error) {

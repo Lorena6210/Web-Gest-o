@@ -24,6 +24,9 @@ export interface TurmaCompleta {
   alunos?: Aluno[];
   professores?:Professor[];
   disciplinas?: Disciplina[];
+  atividades?: Atividades[];
+  provas?: Provas[];
+  faltas?: Faltas[];
 }
 
 export interface Turma {
@@ -39,4 +42,25 @@ export interface Professor {
   FotoPerfil?: string | null;
   Disciplinas: string;
   TotalDisciplinas: number;
+}
+
+export interface Atividades {
+  Id: number;
+  Nome: string;
+  Data: string;
+  Disciplina: number;
+}
+
+export interface Provas {
+  Id: number;
+  Nome: string;
+  Data: string;
+  Disciplina: number;
+}
+
+export interface Faltas {
+  Id: number;
+  Nome: string;
+  Data: string;
+  Disciplina: number;
 }
