@@ -77,54 +77,97 @@ export default function Turmas({ usuario, turmas }: Props) {
       }}
     >
       {turmasFiltradas.map((turma) => (
+       <div
+        key={turma.Id}
+        style={{
+          marginBottom: "10px",
+          borderRadius: "8px",
+          overflow: "hidden",
+          backgroundColor: "#fff",
+          flex: '0 0 calc(30% - 20px)', // Ajuste para melhor espaçamento
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+          transition: 'transform 0.2s, box-shadow 0.2s',
+          cursor: 'pointer'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.02)';
+          e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+        }}
+      >
+        {/* Cabeçalho */}
         <div
-          key={turma.Id}
           style={{
-            marginBottom: "10px",
-            borderRadius: "8px",
-            overflow: "hidden",
-            backgroundColor: "#bdbdbd",
-            flex: '0 0 calc(30% - 1px)',
-
+            backgroundColor: cardColors[turma.Id % cardColors.length],
+            padding: "10px",
+            fontWeight: "bold",
+            color: "#fff",
+            textAlign: "center",
+            fontSize: "1.2em",
           }}
         >
-          {/* Cabeçalho */}
-          <div
-            style={{
-              backgroundColor: "#bdbdbd",
-              padding: "10px",
-              fontWeight: "bold",
-            }}
-          >
-            {turma.Nome}
-          </div>
-
-          {/* Disciplinas */}
-          <div style={{ padding: "10px", fontSize: 14, color: "#333" }}>
-            {turma.disciplinas?.length
-              ? turma.disciplinas.map((d) => d.Nome).join(", ")
-              : "Nenhuma disciplina"}
-          </div>
-
-          {/* Rodapé */}
-          <div
-            style={{
-              padding: "8px 10px",
-              color: "#fff",
-              fontWeight: "bold",
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "14px",
-              backgroundColor: cardColors[turma.Id % cardColors.length],
-            }}
-          >
-            <span>Conteúdo</span>
-            <span>Notas</span>
-          </div>
+          {turma.Nome}
         </div>
+
+        {/* Disciplinas */}
+        <div style={{ padding: "10px", fontSize: "14px", color: "#333", textAlign: "center" }}>
+          {turma.disciplinas?.length
+            ? turma.disciplinas.map((d) => d.Nome).join(", ")
+            : "Nenhuma disciplina"}
+        </div>
+
+        {/* Rodapé */}
+        <div
+          style={{
+            padding: "8px 10px",
+            color: "#fff",
+            fontWeight: "bold",
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: "14px",
+            backgroundColor: cardColors[turma.Id % cardColors.length],
+          }}
+        >
+          <button
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#fff',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+            onClick={() => {/* Navegar para conteúdo */}}
+            aria-label={`Acessar conteúdo de ${turma.Nome}`} // Acessibilidade
+          >
+            <i className="fas fa-file-alt"></i>
+            Conteúdo
+          </button>
+          <button
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#fff',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+            onClick={() => {/* Navegar para notas */}}
+            aria-label={`Acessar notas de ${turma.Nome}`} // Acessibilidade
+          >
+            <i className="fas fa-chart-bar"></i>
+            Notas
+          </button>
+        </div>
+      </div>
       ))}
     </div>
   </main>
 </div>
-  );
-}
+);
+};

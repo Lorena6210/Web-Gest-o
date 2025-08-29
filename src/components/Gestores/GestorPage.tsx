@@ -1,7 +1,7 @@
 
 import React from 'react';
 import{ TurmaCompleta } from '@/Types/Turma';
-import TurmasCard from './TurmaCard';
+import TurmaCard from './TurmaCard';
 
 interface Usuario {
   Nome: string;
@@ -15,5 +15,5 @@ interface AlunoPageProps {
 }
 
 export default function AlunoPage({ usuario, turmas }: AlunoPageProps) {
-  return <TurmasCard usuario={usuario} turmas={turmas} />;
+  return <TurmaCard usuario={usuario} turmas={turmas} />;
 }

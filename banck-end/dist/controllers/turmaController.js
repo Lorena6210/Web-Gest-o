@@ -19,12 +19,15 @@ exports.removerAluno = removerAluno;
 exports.adicionarProfessorTurmaDisciplina = adicionarProfessorTurmaDisciplina;
 exports.adicionarDisciplina = adicionarDisciplina;
 exports.adicionarFalta = adicionarFalta;
+exports.adicionarProva = adicionarProva;
 exports.adicionarAtividade = adicionarAtividade;
 exports.adicionarEvento = adicionarEvento;
 exports.visualizarNotasItens = visualizarNotasItens;
 exports.obterTurmaCompleta = obterTurmaCompleta;
 exports.listarTurmasComDetalhes = listarTurmasComDetalhes;
 exports.adicionarNotaItem = adicionarNotaItem;
+exports.editarTurmaParcial = editarTurmaParcial;
+exports.excluirTurma = excluirTurma;
 const db_1 = __importDefault(require("../db"));
 // Helper genérico com Promise
 const queryAsync = (sql, params) => {
@@ -280,28 +283,91 @@ function adicionarFalta(req, res) {
         }
     });
 }
+function adicionarProva(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { idTurma } = req.params;
+        const { titulo, descricao, dataEntrega, idProfessor, idDisciplina } = req.body;
+        if (!titulo || !descricao || !dataEntrega || !idProfessor || !idDisciplina) {
+            return res.status(400).json({
+                success: false,
+                message: 'É necessário informar titulo, descricao, dataEntrega, idProfessor e idDisciplina'
+            });
+        }
+        try {
+            // valida se a disciplina realmente pertence à turma
+            const disciplina = yield queryAsync(`
+      SELECT * FROM Turma_Disciplina
+      WHERE Id_Turma = ? AND Id_Disciplina = ?
+    `, [idTurma, idDisciplina]);
+            if (disciplina.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Disciplina não encontrada nesta turma'
+                });
+            }
+            yield queryAsync(`
+      INSERT INTO Prova 
+        (Titulo, Descricao, DataCriacao, DataEntrega, Id_Professor, Id_Turma, Id_Disciplina)
+      VALUES (?, ?, CURDATE(), ?, ?, ?, ?)
+    `, [titulo, descricao, dataEntrega, idProfessor, idTurma, idDisciplina]);
+            res.json({
+                success: true,
+                message: 'Prova adicionada com sucesso'
+            });
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : 'Erro desconhecido';
+            console.error('Erro ao adicionar prova:', message);
+            res.status(500).json({
+                success: false,
+                message: 'Erro ao adicionar prova',
+                error: message
+            });
+        }
+    });
+}
 // Atividade
 function adicionarAtividade(req, res) {
-    const { idTurma } = req.params;
-    const { titulo, descricao, dataEntrega, idProfessor } = req.body;
-    queryAsync(`
-    INSERT INTO Atividade (Titulo, Descricao, DataCriacao, DataEntrega, Id_Professor, Id_Turma)
-    VALUES (?, ?, CURDATE(), ?, ?, ?)
-  `, [titulo, descricao, dataEntrega, idProfessor, idTurma])
-        .then(() => {
-        res.json({
-            success: true,
-            message: 'Atividade adicionada com sucesso'
-        });
-    })
-        .catch(error => {
-        const message = error instanceof Error ? error.message : 'Erro desconhecido';
-        console.error('Erro ao adicionar atividade:', message);
-        res.status(500).json({
-            success: false,
-            message: 'Erro ao adicionar atividade',
-            error: message
-        });
+    return __awaiter(this, void 0, void 0, function* () {
+        const { idTurma } = req.params;
+        const { titulo, descricao, dataEntrega, idProfessor, idDisciplina } = req.body;
+        if (!titulo || !descricao || !dataEntrega || !idProfessor || !idDisciplina) {
+            return res.status(400).json({
+                success: false,
+                message: 'É necessário informar titulo, descricao, dataEntrega, idProfessor e idDisciplina'
+            });
+        }
+        try {
+            // valida se a disciplina realmente pertence à turma
+            const disciplina = yield queryAsync(`
+      SELECT * FROM Turma_Disciplina
+      WHERE Id_Turma = ? AND Id_Disciplina = ?
+    `, [idTurma, idDisciplina]);
+            if (disciplina.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Disciplina não encontrada nesta turma'
+                });
+            }
+            yield queryAsync(`
+      INSERT INTO Atividade 
+        (Titulo, Descricao, DataCriacao, DataEntrega, Id_Professor, Id_Turma, Id_Disciplina)
+      VALUES (?, ?, CURDATE(), ?, ?, ?, ?)
+    `, [titulo, descricao, dataEntrega, idProfessor, idTurma, idDisciplina]);
+            res.json({
+                success: true,
+                message: 'Atividade adicionada com sucesso'
+            });
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : 'Erro desconhecido';
+            console.error('Erro ao adicionar atividade:', message);
+            res.status(500).json({
+                success: false,
+                message: 'Erro ao adicionar atividade',
+                error: message
+            });
+        }
     });
 }
 // Evento
@@ -493,7 +559,7 @@ function listarTurmasComDetalhes(req, res) {
                 const [professores, disciplinas, atividades, provas, faltas, alunos] = yield Promise.all([
                     queryAsync(`
             SELECT p.Id, p.Nome, p.Email, p.FotoPerfil,
-                   GROUP_CONCAT(d.Nome SEPARATOR ', ') AS Disciplinas
+            GROUP_CONCAT(d.Nome SEPARATOR ', ') AS Disciplinas
             FROM Professor p
             INNER JOIN Professor_Turma_Disciplina ptd ON ptd.Id_Professor = p.Id
             INNER JOIN Disciplina d ON ptd.Id_Disciplina = d.Id
@@ -554,6 +620,12 @@ function listarTurmasComDetalhes(req, res) {
 function adicionarNotaItem(req, res) {
     const { idTurma, idAluno } = req.params;
     const { tipo, idItem, valor } = req.body; // tipo: 'Atividade' ou 'Prova'
+    const nome = req.body.nome; // ou qualquer outra forma de obter o valor de nome
+    const anoLetivo = req.body.anoLetivo; // ou qualquer outra forma de obter o valor de anoLetivo
+    const serie = req.body.serie; // ou qualquer outra forma de obter o valor de serie
+    const turno = req.body.turno; // ou qualquer outra forma de obter o valor de
+    const sala = req.body.sala; // ou qualquer outra forma de obter o valor de sala
+    const id = req.body.id; // ou qualquer outra forma de obter o valor de id
     if (!tipo || !['Atividade', 'Prova'].includes(tipo)) {
         return res.status(400).json({ success: false, message: 'Tipo inválido' });
     }
@@ -561,15 +633,110 @@ function adicionarNotaItem(req, res) {
         return res.status(400).json({ success: false, message: 'idItem e valor são obrigatórios' });
     }
     queryAsync(`
-    INSERT INTO NotaItem (Id_Aluno, Id_Turma, Tipo, Id_Item, Valor)
-    VALUES (?, ?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE Valor = ?
-  `, [idAluno, idTurma, tipo, idItem, valor, valor])
+    UPDATE Turma
+    SET Nome = ?, AnoLetivo = ?, Serie = ?, Turno = ?, Sala = ?
+    WHERE Id = ? AND Status = 'Ativo'
+  `, [nome, anoLetivo, serie, turno, sala, id])
+        .then(result => {
+        if (result.affectedRows === 0) {
+            throw new Error('Turma não encontrada ou não está ativa');
+        }
+        return queryAsync(`
+        INSERT INTO NotaItem (Id_Aluno, Id_Turma, Tipo, Id_Item, Valor)
+        VALUES (?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE Valor = ?
+      `, [idAluno, idTurma, tipo, idItem, valor, valor]);
+    })
         .then(() => {
         res.json({ success: true, message: 'Nota adicionada com sucesso' });
     })
         .catch(error => {
         console.error('Erro ao adicionar nota:', error);
         res.status(500).json({ success: false, message: 'Erro ao adicionar nota', error: error instanceof Error ? error.message : error });
+    });
+}
+function editarTurmaParcial(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const idTurma = Number(req.params.id);
+        if (isNaN(idTurma)) {
+            return res.status(400).json({ success: false, message: "ID inválido" });
+        }
+        const { nome, serie, anoLetivo, turno, sala, capacidadeMaxima } = req.body;
+        // Monta dinamicamente os campos que foram enviados
+        const campos = [];
+        const valores = [];
+        if (nome) {
+            campos.push("Nome = ?");
+            valores.push(nome);
+        }
+        if (serie) {
+            const idSerie = yield (0, exports.garantirExistencia)("Serie", serie);
+            campos.push("Id_Serie = ?");
+            valores.push(idSerie);
+        }
+        if (anoLetivo) {
+            campos.push("AnoLetivo = ?");
+            valores.push(anoLetivo);
+        }
+        if (turno) {
+            const idTurno = yield (0, exports.garantirExistencia)("Turno", turno);
+            campos.push("Id_Turno = ?");
+            valores.push(idTurno);
+        }
+        if (sala) {
+            const idSala = yield (0, exports.garantirExistencia)("Sala", sala);
+            campos.push("Id_Sala = ?");
+            valores.push(idSala);
+        }
+        if (capacidadeMaxima) {
+            campos.push("CapacidadeMaxima = ?");
+            valores.push(capacidadeMaxima);
+        }
+        if (campos.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Nenhum campo para atualizar foi enviado"
+            });
+        }
+        try {
+            // Faz o update apenas dos campos enviados
+            const result = yield queryAsync(`UPDATE Turma SET ${campos.join(", ")} WHERE Id = ? AND Status = 'Ativo'`, [...valores, idTurma]);
+            if (result.affectedRows === 0) {
+                return res.status(400).json({ success: false, message: "Nenhuma alteração feita" });
+            }
+            // Retorna a turma atualizada
+            const [turmaAtualizada] = yield queryAsync(`SELECT Id, Nome, AnoLetivo, Serie, Turno, Sala, CapacidadeMaxima 
+       FROM Turma WHERE Id = ?`, [idTurma]);
+            res.json({ success: true, message: "Turma atualizada com sucesso", data: turmaAtualizada });
+        }
+        catch (error) {
+            console.error("Erro ao editar turma parcialmente:", error);
+            res.status(500).json({
+                success: false,
+                message: "Erro ao editar turma",
+                error: error instanceof Error ? error.message : error
+            });
+        }
+    });
+}
+function excluirTurma(req, res) {
+    const { id } = req.params;
+    if (!id) {
+        return res.status(400).json({ success: false, message: 'ID da turma é obrigatório' });
+    }
+    queryAsync(`
+    UPDATE Turma
+    SET Status = 'Inativo'
+    WHERE Id = ? AND Status = 'Ativo'
+  `, [id])
+        .then(result => {
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Turma não encontrada ou já está inativa' });
+        }
+        res.json({ success: true, message: 'Turma excluída com sucesso' });
+    })
+        .catch(error => {
+        console.error('Erro ao excluir turma:', error);
+        res.status(500).json({ success: false, message: 'Erro ao excluir turma', error: error instanceof Error ? error.message : error });
     });
 }

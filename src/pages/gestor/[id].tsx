@@ -1,7 +1,8 @@
-// pages/gestor/[id].tsx
+// pages/gestor/[id]/index.tsx
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
-import { fetchTurmaCompleta, TurmaCompleta } from "@/lib/TurmaApi";
+import { fetchTurmasDoGestor } from "@/lib/TurmaApi";
+import { TurmaCompleta } from "@/Types/Turma";
 import GestorPageComponent from "@/components/Gestores/GestorPage";
 
 interface Usuario {
@@ -23,9 +24,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const { id } = context.query;
   const idNum = Number(id);
 
-  // Buscar turmas do gestor
-  const turmas = await fetchTurmaCompleta(idNum);
-
   // Buscar dados do usuário gestor
   const usuarios = await fetchUsuarios();
   const usuario = usuarios.gestores?.find((u: Usuario) => u.Id === idNum);
@@ -34,10 +32,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return { notFound: true };
   }
 
+  // Buscar todas as turmas que o gestor administra
+  const turmas = await fetchTurmasDoGestor(idNum);
+
   return {
     props: {
       usuario,
-      turmas: Array.isArray(turmas) ? turmas : [],
+      turmas,
     },
   };
 };
+

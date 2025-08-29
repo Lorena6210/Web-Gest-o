@@ -1,6 +1,7 @@
+// pages/professor/[id].tsx
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
-import { fetchTurmasLista } from "@/lib/TurmaApi";
+import { fetchTurmasDoProfessor } from '@/lib/TurmaApi';
 import { TurmaCompleta } from '@/Types/Turma';
 import ProfessorPageComponent from "@/components/Professores/ProfessorPage";
 
@@ -35,7 +36,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
     return { notFound: true };
   }
 
-  const turmas = (await fetchTurmasLista(idNum)) ?? [];
+  const turmas = await fetchTurmasDoProfessor(idNum);
   return {
     props: {
       usuario,

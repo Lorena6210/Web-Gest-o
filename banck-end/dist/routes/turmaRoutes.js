@@ -27,14 +27,28 @@ router.post('/:idTurma/alunos/:idAluno/faltas', (req, res) => {
     (0, turmaController_1.adicionarFalta)(req, res);
 });
 // Adicionar nota
-// Adicionar nota
 router.post('/:idTurma/alunos/:idAluno/notas', (req, res) => {
     (0, turmaController_1.adicionarNotaItem)(req, res);
 });
 // Adicionar atividade
-router.post('/:idTurma/atividades', turmaController_1.adicionarAtividade);
+router.post('/:idTurma/atividades', (req, res) => {
+    (0, turmaController_1.adicionarAtividade)(req, res);
+});
+// Adicionar Prova
+router.post('/:idTurma/provas', (req, res) => {
+    (0, turmaController_1.adicionarProva)(req, res);
+});
 // Adicionar evento
 router.post('/:idTurma/eventos', turmaController_1.adicionarEvento);
 // Visualizar notas e faltas
 router.get('/alunos/:idAluno/notas-faltas', turmaController_1.visualizarNotasItens);
+router.post('/:idTurma/alunos/:idAluno/notas', (req, res) => {
+    (0, turmaController_1.adicionarNotaItem)(req, res);
+});
+router.post('/:idTurma/alunos/:idAluno/faltas', (req, res) => {
+    (0, turmaController_1.adicionarFalta)(req, res);
+});
+router.put('/:idTurma', (req, res) => { (0, turmaController_1.editarTurmaParcial)(req, res); });
+router.patch("/:id/editar", (req, res) => { (0, turmaController_1.editarTurmaParcial)(req, res); });
+router.delete('/:id/excluir', (req, res) => { (0, turmaController_1.excluirTurma)(req, res); });
 exports.default = router;

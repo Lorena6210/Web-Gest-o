@@ -12,6 +12,9 @@ import {
   adicionarAtividade,
   adicionarEvento,
   visualizarNotasItens,
+  adicionarProva,
+  editarTurmaParcial,
+  excluirTurma,
 } from '../controllers/turmaController';
 
 const router = Router();
@@ -45,19 +48,35 @@ router.post('/:idTurma/alunos/:idAluno/faltas', (req: Request, res: Response) =>
 });
 
 // Adicionar nota
-// Adicionar nota
 router.post('/:idTurma/alunos/:idAluno/notas', (req: Request, res: Response) => {
   adicionarNotaItem(req, res);
 });
 
 // Adicionar atividade
-router.post('/:idTurma/atividades', adicionarAtividade);
+router.post('/:idTurma/atividades',(req:Request, res:Response) => {
+  adicionarAtividade(req, res);
+});
+
+// Adicionar Prova
+router.post('/:idTurma/provas', (req: Request, res: Response) => {
+  adicionarProva(req, res);
+});
 
 // Adicionar evento
 router.post('/:idTurma/eventos', adicionarEvento);
 
 // Visualizar notas e faltas
 router.get('/alunos/:idAluno/notas-faltas', visualizarNotasItens);
+router.post('/:idTurma/alunos/:idAluno/notas', (req: Request, res: Response) => {
+  adicionarNotaItem(req, res);
+});
+router.post('/:idTurma/alunos/:idAluno/faltas', (req: Request, res: Response) => {
+  adicionarFalta(req, res);
+})
 
+router.put('/:idTurma', (req: Request, res: Response) => {editarTurmaParcial(req, res)});
+router.patch("/:id/editar", (req: Request, res: Response) => {editarTurmaParcial(req, res)});
+
+router.delete('/:id/excluir',(req: Request, res: Response) => {excluirTurma(req, res)});
 
 export default router;

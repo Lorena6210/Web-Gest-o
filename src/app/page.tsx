@@ -1,4 +1,5 @@
 "use client";
+
 import LoginPage from "@/Views/Login";
 import { fetchUsuarios } from "../lib/UsuarioApi";
 import { useEffect, useState } from "react";
@@ -18,18 +19,30 @@ interface Dados {
   gestores: Usuario[];
 }
 
-interface Props {
-  usuarios: Dados;
-}
-
 export default function App() {
   const [usuarios, setUsuarios] = useState<Dados | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUsuarios().then(setUsuarios).catch(console.error);
+    const carregarUsuarios = async () => {
+      try {
+        const dados = await fetchUsuarios();
+        setUsuarios(dados);
+      } catch (err: any) {
+        console.error(err);
+        setError("Erro ao carregar usuários.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    carregarUsuarios();
   }, []);
 
-  if (!usuarios) return <div>Carregando usuários...</div>;
+  if (loading) return <div>Carregando usuários...</div>;
+  if (error) return <div>{error}</div>;
+  if (!usuarios) return <div>Nenhum usuário encontrado.</div>;
 
   return <LoginPage usuarios={usuarios} />;
 }
