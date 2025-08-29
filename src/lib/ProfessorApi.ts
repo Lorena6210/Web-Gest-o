@@ -47,6 +47,39 @@ export const fetchCreateProfessor = async (professor: ProfessorDataBasica) => {
   }
 }
 
+export const fetchUpdateProfessor = async (professor: ProfessorDataBasica) => {
+  try {
+    const response = await fetch(`http://localhost:3000/professores/${professor.professor.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(professor),
+    });
+    if (!response.ok) throw new Error("Erro ao atualizar professor");
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Erro ao atualizar professor:", error);
+    throw error;
+  }
+}
+
+export const fetchDeleteProfessor = async (id: number) => {
+  try {
+    const response = await fetch(`http://localhost:3000/professores/${id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) throw new Error("Erro ao deletar professor");
+    return await response.json();
+  } catch (error) {
+    console.error("Erro ao deletar professor:", error);
+    throw error;
+  }
+}
+
+
 export interface TurmaBasica {
   id: number;
   nome: string;

@@ -1,147 +1,233 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
-import { fetchAlunos, createAluno } from "@/lib/AlunoApi";
+import { FaPlus } from "react-icons/fa";
+import { fetchAlunos, createAluno, updateAluno, deleteAluno } from "@/lib/AlunoApi";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
+import Modal from "@mui/material/Modal";
+import Input from "@mui/material/Input";
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert, { AlertColor } from "@mui/material/Alert";
 import Navbar from "../../Navbar";
-import { Usuario } from "@/lib/jwtLoginStatus";
-import { TurmaCompleta } from "@/Types/Turma";
 
-interface Aluno {
+export interface Aluno {
+  Id?: number;
   Nome: string;
   CPF: string;
   Senha: string;
+  Telefone: string;
+  DataNascimento: string;
+  Genero: string;
+  FotoPerfil: string;
+  Status: string;
   RA: string;
-  Id: number;
-  Telefone: string
-  DataNascimento: string
-  Genero: string
-  FotoPerfil: string
-  Status: string
-}
-interface CriarAlunoProps {
-  usuario: Usuario;
 }
 
-const CriarAluno: React.FC<CriarAlunoProps> = ({ usuario,}) => {
+interface Usuario {
+  Nome: string;
+  Id: number;
+  Tipo: string;
+}
+
+export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
-  const [form, setForm] = useState({
+  const [loading, setLoading] = useState(true);
+
+  // Modais
+  const [openCriar, setOpenCriar] = useState(false);
+  const [openEditar, setOpenEditar] = useState(false);
+  const [alunoSelecionado, setAlunoSelecionado] = useState<Aluno | null>(null);
+
+  // Snackbar
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<AlertColor>("success");
+
+  const showSnackbar = (message: string, severity: AlertColor) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
+
+  // Novo aluno
+  const [novoAluno, setNovoAluno] = useState<Aluno>({
     Nome: "",
     CPF: "",
     Senha: "",
-    RA: ""
+    Telefone: "",
+    DataNascimento: "",
+    Genero: "",
+    FotoPerfil: "",
+    Status: "Ativo",
+    RA: "",
   });
 
-  // Buscar alunos ao carregar
   useEffect(() => {
-    const carregar = async () => {
+    const carregarAlunos = async () => {
       try {
-        const data = await fetchAlunos();
-        setAlunos(data);
+        const dados = await fetchAlunos();
+        setAlunos(dados);
       } catch (error) {
         console.error(error);
+        showSnackbar("Erro ao carregar alunos", "error");
+      } finally {
+        setLoading(false);
       }
     };
-    carregar();
+    carregarAlunos();
   }, []);
 
-  // Handler criação aluno
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  try {
-    const aluno: Aluno = {
-      ...form,
-      Telefone: '', 
-      DataNascimento: '', 
-      Genero: '',
-      FotoPerfil: '',
-      Status: '',
-      RA: '',
-      Id: 0, // Adicione a propriedade Id com um valor padrão
-    };
-    const alton = {
-      Nome: aluno.Nome,
-      CPF: aluno.CPF,
-      Senha: aluno.Senha,
-      Telefone: aluno.Telefone,
-      DataNascimento: aluno.DataNascimento,
-      Genero: aluno.Genero,
-      FotoPerfil: aluno.FotoPerfil,
-      Status: aluno.Status,
-      RA: aluno.RA
-    };
-    const novo = await createAluno(alton);
-    alert("Aluno criado com sucesso!");
-    setAlunos([...alunos, { ...aluno, Id: novo.id }]);
-    setForm({ Nome: "", CPF: "", Senha: "", RA: "" });
-  } catch (error) {
-    console.error(error);
-    alert("Erro ao criar aluno");
-  }
-};
+  const salvarNovoAluno = async () => {
+    try {
+      const alunoCriado = await createAluno(novoAluno);
+      setAlunos((prev) => [...prev, alunoCriado]);
+      showSnackbar("Aluno cadastrado com sucesso!", "success");
+      setOpenCriar(false);
+      setNovoAluno({
+        Nome: "",
+        CPF: "",
+        Senha: "",
+        Telefone: "",
+        DataNascimento: "",
+        Genero: "",
+        FotoPerfil: "",
+        Status: "Ativo",
+        RA: "",
+      });
+    } catch (error) {
+      console.error(error);
+      showSnackbar("Erro ao cadastrar aluno", "error");
+    }
+  };
+
+  const salvarEdicao = async () => {
+    if (!alunoSelecionado) return;
+    try {
+      const alunoAtualizado = await updateAluno(alunoSelecionado);
+      setAlunos((prev) => prev.map((a) => (a.Id === alunoAtualizado.Id ? alunoAtualizado : a)));
+      showSnackbar("Aluno atualizado com sucesso!", "success");
+      setOpenEditar(false);
+    } catch (error) {
+      console.error(error);
+      showSnackbar("Erro ao atualizar aluno", "error");
+    }
+  };
+
+  const excluirAluno = async (id?: number) => {
+    if (!id) return;
+    if (!window.confirm("Deseja realmente excluir este aluno?")) return;
+    try {
+      await deleteAluno(id);
+      setAlunos((prev) => prev.filter((a) => a.Id !== id));
+      showSnackbar("Aluno excluído com sucesso!", "success");
+    } catch (error) {
+      console.error(error);
+      showSnackbar("Erro ao excluir aluno", "error");
+    }
+  };
+
+  const styleModal = {
+    borderRadius: 4,
+    maxWidth: 500,
+    bgcolor: "background.paper",
+    p: 4,
+    mx: "auto",
+    my: "10vh",
+    maxHeight: "80vh",
+    overflowY: "auto",
+  };
 
   return (
-    <div className="p-6">
+    <div className="flex flex-col h-screen w-full bg-gray-50">
       <Navbar usuario={usuario} />
-      <h1 className="text-xl font-bold mb-4">Gerenciar Alunos</h1>
+      <main style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", flex: 1,maxWidth:"1024px", width: "100%" }} className="flex-1 overflow-y-auto p-6">
+        <h1 className="text-2xl font-bold mb-6">Todos os Alunos</h1>
 
-      {/* Formulário */}
-      <form onSubmit={handleSubmit} className="mb-6 space-y-2">
-        <input
-          type="text"
-          placeholder="Nome"
-          value={form.Nome}
-          onChange={(e) => setForm({ ...form, Nome: e.target.value })}
-          className="border p-2 rounded w-full"
-          required
-        />
-        <input
-          type="text"
-          placeholder="CPF"
-          value={form.CPF}
-          onChange={(e) => setForm({ ...form, CPF: e.target.value })}
-          className="border p-2 rounded w-full"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Senha"
-          value={form.Senha}
-          onChange={(e) => setForm({ ...form, Senha: e.target.value })}
-          className="border p-2 rounded w-full"
-          required
-        />
-        <input
-          type="text"
-          placeholder="RA"
-          value={form.RA}
-          onChange={(e) => setForm({ ...form, RA: e.target.value })}
-          className="border p-2 rounded w-full"
-          required
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          Criar Aluno
-        </button>
-      </form>
-
-      {/* Listagem */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {alunos.map((aluno) => (
-          <div
-            key={aluno.Id}
-            className="p-4 border rounded shadow bg-white"
-          >
-            <h2 className="font-semibold">{aluno.Nome}</h2>
-            <p>RA: {aluno.RA}</p>
-            <p>CPF: {aluno.CPF}</p>
-            <p>Status: {aluno.Status}</p>
+        {loading ? (
+          <p>Carregando alunos...</p>
+        ) : alunos.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {alunos.map((aluno) => (
+              <div
+                key={aluno.Id}
+                className="bg-white shadow-lg rounded-xl p-6 cursor-pointer hover:shadow-xl"
+                onClick={() => {
+                  setAlunoSelecionado(aluno);
+                  setOpenEditar(true);
+                }}
+              >
+                <h2 className="text-xl font-bold">{aluno.Nome}</h2>
+                <p className="text-gray-600">RA: {aluno.RA}</p>
+                <p className="text-sm text-gray-500">{aluno.CPF}</p>
+                <p className="text-sm text-gray-500">Status: {aluno.Status}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        ) : (
+          <p>Nenhum aluno encontrado.</p>
+        )}
+
+        {/* Modal Criar */}
+        <Modal open={openCriar} onClose={() => setOpenCriar(false)}>
+          <Box sx={styleModal}>
+            <Typography variant="h6" sx={{ mb: 3 }}>Cadastrar Aluno</Typography>
+            <Input fullWidth placeholder="Nome" value={novoAluno.Nome} onChange={(e) => setNovoAluno({ ...novoAluno, Nome: e.target.value })} sx={{ mb: 2 }} />
+            <Input fullWidth placeholder="CPF" value={novoAluno.CPF} onChange={(e) => setNovoAluno({ ...novoAluno, CPF: e.target.value })} sx={{ mb: 2 }} />
+            <Input fullWidth placeholder="Telefone" value={novoAluno.Telefone} onChange={(e) => setNovoAluno({ ...novoAluno, Telefone: e.target.value })} sx={{ mb: 2 }} />
+            <Input type="date" fullWidth value={novoAluno.DataNascimento} onChange={(e) => setNovoAluno({ ...novoAluno, DataNascimento: e.target.value })} sx={{ mb: 2 }} />
+            <Input fullWidth placeholder="Gênero" value={novoAluno.Genero} onChange={(e) => setNovoAluno({ ...novoAluno, Genero: e.target.value })} sx={{ mb: 2 }} />
+            <Input fullWidth placeholder="RA" value={novoAluno.RA} onChange={(e) => setNovoAluno({ ...novoAluno, RA: e.target.value })} sx={{ mb: 2 }} />
+            <Input 
+            fullWidth 
+            type="password"
+            placeholder="Senha"
+            value={novoAluno.Senha} 
+            onChange={(e) => setNovoAluno({ ...novoAluno, Senha: e.target.value })} 
+            sx={{ mb: 2 }} 
+          />
+          <Button variant="contained" fullWidth onClick={salvarNovoAluno}>
+              Salvar
+            </Button>
+          </Box>
+        </Modal>
+
+        {/* Modal Editar */}
+        <Modal open={openEditar} onClose={() => setOpenEditar(false)}>
+          <Box sx={styleModal}>
+            {alunoSelecionado && (
+              <>
+                <Typography variant="h6" sx={{ mb: 3 }}>Editar Aluno</Typography>
+                <Input fullWidth value={alunoSelecionado.Nome} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Nome: e.target.value })} sx={{ mb: 2 }} />
+                <Input fullWidth value={alunoSelecionado.CPF} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, CPF: e.target.value })} sx={{ mb: 2 }} />
+                <Input fullWidth value={alunoSelecionado.Telefone} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Telefone: e.target.value })} sx={{ mb: 2 }} />
+                <Input fullWidth value={alunoSelecionado.RA} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, RA: e.target.value })} sx={{ mb: 2 }} />
+
+                <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
+                  <Button color="error" variant="outlined" onClick={() => excluirAluno(alunoSelecionado.Id)}>
+                    Excluir
+                  </Button>
+                  <Button variant="contained" onClick={salvarEdicao}>
+                    Salvar
+                  </Button>
+                </Box>
+              </>
+            )}
+          </Box>
+        </Modal>
+
+        {/* Snackbar */}
+        <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
+          <MuiAlert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} variant="filled">
+            {snackbarMessage}
+          </MuiAlert>
+        </Snackbar>
+
+        {/* Botão flutuante Criar */}
+        <Box onClick={() => setOpenCriar(true)} className="fixed bottom-6 right-6 bg-indigo-600 text-white p-5 rounded-full shadow-lg cursor-pointer hover:bg-indigo-700 transition-colors">
+          <FaPlus size={20} />
+        </Box>
+      </main>
     </div>
   );
 }
-
-export default CriarAluno;

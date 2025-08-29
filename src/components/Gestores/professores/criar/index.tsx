@@ -1,95 +1,111 @@
-import React, { useState } from 'react';
-import { fetchCreateProfessor, fetchProfessores } from '@/lib/ProfessorApi';
-
-export interface TurmaBasica {
-  id: number;
-  nome: string;
-  disciplina: string;
-  cor: string;
-}
-
-export interface ProfessorDataBasica {
-  professor: {
-    id: number;
-    nome: string;
-    email: string;
-    telefone: string;
-  };
-  turmas: TurmaBasica[];
-}
+import React, { useState } from "react";
+import { fetchCreateProfessor, fetchProfessores } from "@/lib/ProfessorApi";
 
 export default function Professor() {
-  const [nome, setNome] = useState('');
-  const [email, setEmail] = useState('');
-  const [telefone, setTelefone] = useState('');
-  const [id, setId] = useState('');
-  const [professor, setProfessor] = useState<ProfessorDataBasica | null>(null);
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefone, setTelefone] = useState("");
+  const [senha, setSenha] = useState("");
+  const [id, setId] = useState("");
+  const [professor, setProfessor] = useState<any>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [mensagem, setMensagem] = useState<string | null>(null);
 
-const handleSubmitCriar = async (event: { preventDefault: () => void; }) => {
-  event.preventDefault();
-  const professor: ProfessorDataBasica = {
-    professor: {
-      id: 0, // você precisa fornecer um id válido aqui
-      nome,
-      email,
-      telefone
-    },
-    turmas: [], // você precisa fornecer um array de turmas aqui
+  const handleSubmitCriar = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setErro(null);
+    setMensagem(null);
+
+    if (!nome || !email || !telefone || !senha) {
+      setErro("Preencha todos os campos obrigatórios!");
+      return;
+    }
+
+    try {
+      const novoProfessor = { nome, email, telefone, senha };
+      const data = await fetchCreateProfessor(novoProfessor);
+
+      setMensagem(`Professor criado com sucesso! ID: ${data.id}`);
+      setNome("");
+      setEmail("");
+      setTelefone("");
+      setSenha("");
+    } catch (error: any) {
+      setErro(error.message || "Erro ao criar professor");
+    }
   };
-  try {
-    const data = await fetchCreateProfessor(professor);
-    console.log('Professor criado com sucesso:', data);
-  } catch (error) {
-    console.error('Erro ao criar professor:', error);
-  }
-};
-const handleSubmitBuscar = async (event: { preventDefault: () => void; }) => {
-  event.preventDefault();
-  try {
-    const data = await fetchProfessores(Number(id));
-    setProfessor(data);
-  } catch (error) {
-    console.error('Erro ao buscar professor:', error);
-  }
-};
+
+  const handleSubmitBuscar = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setErro(null);
+    setMensagem(null);
+
+    try {
+      const data = await fetchProfessores(Number(id));
+      setProfessor(data);
+    } catch (error: any) {
+      setErro(error.message || "Erro ao buscar professor");
+    }
+  };
 
   return (
     <div>
       <h1>Professor</h1>
+
       <h2>Criar Professor</h2>
       <form onSubmit={handleSubmitCriar}>
-        <label>
-          Nome:
-          <input type="text" value={nome} onChange={(event) => setNome(event.target.value)} />
-        </label>
+        <input
+          type="text"
+          placeholder="Nome"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+        />
         <br />
-        <label>
-          Email:
-          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-        </label>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
         <br />
-        <label>
-          Telefone:
-          <input type="text" value={telefone} onChange={(event) => setTelefone(event.target.value)} />
-        </label>
+        <input
+          type="text"
+          placeholder="Telefone"
+          value={telefone}
+          onChange={(e) => setTelefone(e.target.value)}
+        />
+        <br />
+        <input
+          type="password"
+          placeholder="Senha"
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+        />
         <br />
         <button type="submit">Criar Professor</button>
       </form>
+
+      {erro && <p style={{ color: "red" }}>{erro}</p>}
+      {mensagem && <p style={{ color: "green" }}>{mensagem}</p>}
+
       <h2>Buscar Professor</h2>
       <form onSubmit={handleSubmitBuscar}>
-        <label>
-          ID:
-          <input type="number" value={id} onChange={(event) => setId(event.target.value)} />
-        </label>
+        <input
+          type="number"
+          placeholder="ID"
+          value={id}
+          onChange={(e) => setId(e.target.value)}
+        />
         <br />
         <button type="submit">Buscar Professor</button>
       </form>
+
       {professor && (
         <div>
           <h2>Professor encontrado:</h2>
-            <p>Nome: {professor.professor.nome}</p>
-            <p>Email: {professor.professor.email}</p>
-          <p>Telefone: {professor.professor.telefone}</p>
+          <p>Nome: {professor.nome}</p>
+          <p>Email: {professor.email}</p>
+          <p>Telefone: {professor.telefone}</p>
         </div>
       )}
     </div>
