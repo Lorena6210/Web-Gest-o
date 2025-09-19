@@ -7,6 +7,9 @@ const router = (0, express_1.Router)();
 router.post('/', turmaController_1.criarTurma);
 // Listar todas as turmas básicas
 router.get('/', turmaController_1.listarTurmasComDetalhes);
+router.get('/:id', (req, res) => {
+    (0, turmaController_1.obterTurmaPorId)(req, res);
+});
 // 🔹 Buscar uma turma completa por ID (compatível com seu fetchTurmaCompleta)
 router.get('/:id/completa', (req, res) => {
     (0, turmaController_1.obterTurmaCompleta)(req, res);

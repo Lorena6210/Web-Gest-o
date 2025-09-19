@@ -15,6 +15,7 @@ import {
   adicionarProva,
   editarTurmaParcial,
   excluirTurma,
+  obterTurmaPorId
 } from '../controllers/turmaController';
 
 const router = Router();
@@ -24,6 +25,10 @@ router.post('/', criarTurma);
 
 // Listar todas as turmas básicas
 router.get('/', listarTurmasComDetalhes);
+
+router.get('/:id', (req, res) => {
+  obterTurmaPorId(req, res);
+});
 
 // 🔹 Buscar uma turma completa por ID (compatível com seu fetchTurmaCompleta)
 router.get('/:id/completa', (req: Request, res: Response) => {

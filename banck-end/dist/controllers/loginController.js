@@ -92,8 +92,8 @@ const buscarResponsavelPorEmail = (req, res) => __awaiter(void 0, void 0, void 0
         const connection = yield promise_1.default.createConnection({
             host: 'localhost',
             user: 'admin',
-            password: 'senha123',
-            database: 'NovoLearnHub'
+            password: 'senha@123',
+            database: 'ControlHub'
         });
         const [rows] = yield connection.execute('SELECT * FROM Responsavel WHERE Email = ? LIMIT 1', [email]);
         yield connection.end();

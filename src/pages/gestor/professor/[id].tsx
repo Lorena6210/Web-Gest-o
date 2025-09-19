@@ -24,7 +24,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const idNum = Number(id);
 
   const usuarios = await fetchUsuarios();
-  const usuario = usuarios.gestores?.find(u => u.Id === idNum);
+  const usuario = usuarios.gestores?.find((u: { Id: number; }) => u.Id === idNum);
 
   if (!usuario) return { notFound: true };
 

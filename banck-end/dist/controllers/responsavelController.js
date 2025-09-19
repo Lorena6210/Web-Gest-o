@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteResponsavel = exports.activateResponsavel = exports.updateResponsavel = exports.createResponsavel = exports.getResponsavelById = exports.getResponsaveis = void 0;
+exports.getAlunosByResponsavel = exports.deleteResponsavel = exports.activateResponsavel = exports.updateResponsavel = exports.createResponsavel = exports.getResponsavelById = exports.getResponsaveis = void 0;
 const db_1 = __importDefault(require("../db"));
 // Funções de controle para Responsáveis
 const getResponsaveis = (req, res) => {
@@ -78,3 +78,24 @@ const deleteResponsavel = (req, res) => {
     });
 };
 exports.deleteResponsavel = deleteResponsavel;
+const getAlunosByResponsavel = (req, res) => {
+    const { id } = req.params; // id do responsável
+    const query = `
+    SELECT a.*
+    FROM Aluno a
+    JOIN Aluno_Responsavel ar ON a.Id = ar.Id_Aluno
+    WHERE ar.Id_Responsavel = ?
+      AND ar.Status = 'Ativo'
+      AND a.Status = 'Ativo'
+  `;
+    db_1.default.query(query, [id], (err, results) => {
+        if (err) {
+            return res.status(500).json({ error: 'Erro ao buscar alunos do responsável' });
+        }
+        if (!Array.isArray(results) || results.length === 0) {
+            return res.status(404).json({ error: 'Nenhum aluno encontrado para este responsável' });
+        }
+        res.status(200).json(results);
+    });
+};
+exports.getAlunosByResponsavel = getAlunosByResponsavel;

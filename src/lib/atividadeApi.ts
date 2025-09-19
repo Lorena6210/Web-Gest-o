@@ -1,7 +1,26 @@
 // lib/api.ts
-export const fetchAlunos = async (id: number) => {
+
+export interface ProfessorDataBasica {
+  id: number;
+  nome: string;
+  email: string;
+  senha: string;
+  disciplina?: string | null;
+  genero?: string | null;
+  status?: string;
+  fotoPerfil?: string | null;
+}
+
+export interface Atividade {
+  id: number;
+  titulo: string;
+  turmaId: number;
+  nome: string;
+}
+
+export const fetchAtividades = async (): Promise<Atividade[]> => {
   try {
-    const response = await fetch(`http://localhost:3000/atividades/${id}`);
+    const response = await fetch(`http://localhost:3001/atividades`);
     if (!response.ok) {
       throw new Error("Erro na resposta do servidor");
     }
@@ -12,3 +31,4 @@ export const fetchAlunos = async (id: number) => {
     throw error;
   }
 };
+

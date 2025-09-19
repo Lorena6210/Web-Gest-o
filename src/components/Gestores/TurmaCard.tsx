@@ -4,7 +4,7 @@ import { FaPlus } from "react-icons/fa";
 import { fetchTurmas, fetchCreateTurmas, fetchDeleteTurma } from "@/lib/TurmaApi";
 import { fetchAlunos } from "@/lib/AlunoApi";
 import { fetchDisciplinas } from "@/lib/disciplinaApi";
-import { TurmaCompleta } from "@/Types/Turma";
+import { TurmaCompleta, } from "@/Types/Turma";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
@@ -13,6 +13,9 @@ import Input from "@mui/material/Input";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert, { AlertColor } from "@mui/material/Alert";
 import Navbar from "./Navbar";
+import { fetchProfessores } from "@/lib/ProfessorApi"; // importe a função correta
+
+
 
 interface Usuario {
   Nome: string;
@@ -38,12 +41,25 @@ export interface Disciplina {
   Nome: string;
   Codigo: string;
   CargaHoraria: number;
+  Id_Professor: number;
+}
+
+// Exemplo de como a interface Professor poderia ser definida
+interface Professor {
+  Id: number;
+  Nome: string;
+  Email: string;
+  FotoPerfil?: string | null;
+  Disciplinas: number[]; // Alterado de string para number[]
+  TotalDisciplinas: number;
 }
 
 export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
   const [turmas, setTurmas] = useState<TurmaCompleta[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
+  const [professores, setProfessores] = useState<Professor[]>([]);
+  const [professoresPorDisciplina, setProfessoresPorDisciplina] = useState<{ [disciplinaId: number]: number | null }>({});
   const [loading, setLoading] = useState(true);
 
   // Modais
@@ -77,42 +93,33 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
   const [selectedAlunos, setSelectedAlunos] = useState<Aluno[]>([]);
   const [selectedDisciplinas, setSelectedDisciplinas] = useState<Disciplina[]>([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const fetchedTurmas = await fetchTurmas();
-        setTurmas(fetchedTurmas);
-      } catch (error) {
-        console.error(error);
-        showSnackbar("Erro ao carregar turmas", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    const fetchAlunosData = async () => {
-      try {
-        const alunosData = await fetchAlunos();
-        setAlunos(alunosData || []);
-      } catch (error) {
-        console.error(error);
-        showSnackbar("Erro ao carregar alunos", "error");
-      }
-    };
-    const fetchDisciplinasData = async () => {
-      try {
-        const disciplinasData = await fetchDisciplinas();
-        setDisciplinas(disciplinasData || []);
-      } catch (error) {
-        console.error(error);
-        showSnackbar("Erro ao carregar disciplinas", "error");
-      }
-    };
-    fetchData();
-    fetchAlunosData();
-    fetchDisciplinasData();
-  }, []);
+  // Fetch professores, turmas, alunos, disciplinas
 
-  // Funções de modais
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const [turmasData, alunosData, disciplinasData, professoresData] = await Promise.all([
+        fetchTurmas(),
+        fetchAlunos(),
+        fetchDisciplinas(),
+        fetchProfessores(), // buscar todos os professores
+      ]);
+      setTurmas(turmasData);
+      setAlunos(alunosData as Aluno[] || []);
+      setDisciplinas(disciplinasData || []);
+      setProfessores(professoresData || []);
+    } catch (error) {
+      console.error(error);
+      showSnackbar("Erro ao carregar dados", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchData();
+}, []);
+
+
+  // Modais
   const handleOpenDetalhes = (turma: TurmaCompleta) => {
     setTurmaSelecionada(turma);
     setOpenDetalhes(true);
@@ -123,30 +130,65 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
   };
 
   const handleOpenEditar = () => {
+    if (!turmaSelecionada) return;
     setEditTurma(turmaSelecionada);
+    // Preencher professoresPorDisciplina no edit
+    const map: { [discId: number]: number } = {};
+    turmaSelecionada.professores?.forEach((p) => {
+      const disciplinas = p.Disciplinas.split(',').map(Number);
+      disciplinas.forEach((discId) => {
+        map[discId] = p.Id;
+      });
+    });
+    setProfessoresPorDisciplina(map);
     setOpenEditar(true);
   };
   const handleCloseEditar = () => {
     setOpenEditar(false);
     setEditTurma(null);
+    setProfessoresPorDisciplina({});
   };
 
-  const handleEditChange = (field: keyof TurmaCompleta, value: any) => {
+  const handleEditChange = (field: keyof TurmaCompleta, value: string | number) => {
     if (!editTurma) return;
     setEditTurma({ ...editTurma, [field]: value });
   };
 
+  // Salvar alterações
   const salvarAlteracoes = async () => {
     if (!editTurma) return;
     try {
-      const res = await fetch(`http://localhost:3000/turmas/${editTurma.Id}/editar`, {
+      const payload = {
+        nome: editTurma.Nome,
+        serie: editTurma.Serie,
+        anoLetivo: editTurma.AnoLetivo,
+        turno: editTurma.Turno,
+        sala: editTurma.Sala,
+        capacidadeMaxima: editTurma.CapacidadeMaxima,
+        alunos: editTurma.alunos?.map((a) => a.Id),
+        disciplinas: editTurma.disciplinas?.map((d) => d.Id),
+        professores: Object.entries(professoresPorDisciplina)
+          .filter(([_, profId]) => profId !== null)
+          .reduce<{ id: number; disciplinas: number[] }[]>((acc, [discId, profId]) => {
+            const existing = acc.find((p) => p.id === profId);
+            if (existing) {
+              existing.disciplinas.push(Number(discId));
+            } else {
+              acc.push({ id: Number(profId), disciplinas: [Number(discId)] });
+            }
+            return acc;
+          }, []),
+      };
+
+      const res = await fetch(`http://localhost:3001/turmas/${editTurma.Id}/editar`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editTurma),
+        body: JSON.stringify(payload),
       });
+
       const data = await res.json();
       if (res.ok) {
-        setTurmas((prev) => prev.map((t) => (t.Id === editTurma.Id ? editTurma : t)));
+        setTurmas((prev) => prev.map((t) => (t.Id === editTurma.Id ? { ...t, ...editTurma } : t)));
         showSnackbar("Turma atualizada com sucesso!", "success");
         handleCloseEditar();
         handleCloseDetalhes();
@@ -159,40 +201,51 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
     }
   };
 
-const criarTurma = async () => {
-  try {
-    const payload = {
-      nome: novaTurma.Nome,
-      serie: novaTurma.Serie,
-      anoLetivo: novaTurma.AnoLetivo,
-      turno: novaTurma.Turno,
-      sala: novaTurma.Sala,
-      capacidadeMaxima: novaTurma.CapacidadeMaxima,
-      alunos: selectedAlunos.map((a) => a.Id),
-      disciplinas: selectedDisciplinas.map((d) => d.Id),
-      professores: [],
-    };
+  // Criar turma
+  const criarTurma = async () => {
+    try {
+      const payload = {
+        nome: novaTurma.Nome,
+        serie: novaTurma.Serie,
+        anoLetivo: novaTurma.AnoLetivo,
+        turno: novaTurma.Turno,
+        sala: novaTurma.Sala,
+        capacidadeMaxima: novaTurma.CapacidadeMaxima,
+        alunos: selectedAlunos.map((a) => a.Id),
+        disciplinas: selectedDisciplinas.map((d) => d.Id),
+        professores: Object.entries(professoresPorDisciplina)
+          .filter(([_, profId]) => profId !== null)
+          .reduce<{ id: number; disciplinas: number[] }[]>((acc, [discId, profId]) => {
+            const existing = acc.find((p) => p.id === profId);
+            if (existing) {
+              existing.disciplinas.push(Number(discId));
+            } else {
+              acc.push({ id: Number(profId), disciplinas: [Number(discId)] });
+            }
+            return acc;
+          }, []),
+      };
 
-    const data = await fetchCreateTurmas(payload);
-    setTurmas((prev) => [...prev, data]);
-    showSnackbar("Turma criada com sucesso!", "success");
-    setOpenCriar(false);
-    setNovaTurma({
-      Nome: "",
-      Serie: "",
-      AnoLetivo: new Date().getFullYear(),
-      Turno: "",
-      Sala: "",
-      CapacidadeMaxima: 0,
-    });
-    setSelectedAlunos([]);
-    setSelectedDisciplinas([]);
-  } catch (error) {
-    console.error(error);
-    showSnackbar("Erro ao criar turma", "error");
-  }
-};
-
+      const data = await fetchCreateTurmas(payload);
+      setTurmas((prev) => [...prev, data]);
+      showSnackbar("Turma criada com sucesso!", "success");
+      setOpenCriar(false);
+      setNovaTurma({
+        Nome: "",
+        Serie: "",
+        AnoLetivo: new Date().getFullYear(),
+        Turno: "",
+        Sala: "",
+        CapacidadeMaxima: 0,
+      });
+      setSelectedAlunos([]);
+      setSelectedDisciplinas([]);
+      setProfessoresPorDisciplina({});
+    } catch (error) {
+      console.error(error);
+      showSnackbar("Erro ao criar turma", "error");
+    }
+  };
 
   const handleDeleteTurma = async (turma: TurmaCompleta) => {
     if (!window.confirm(`Deseja excluir a turma "${turma.Nome}"?`)) return;
@@ -209,11 +262,11 @@ const criarTurma = async () => {
 
   const styleModal = {
     borderRadius: 4,
-    maxWidth: 500,
+    maxWidth: 600,
     bgcolor: "background.paper",
     p: 4,
     mx: "auto",
-    my: "10vh",
+    my: "5vh",
     maxHeight: "80vh",
     overflowY: "auto",
   };
@@ -221,13 +274,13 @@ const criarTurma = async () => {
   return (
     <div className="flex flex-col h-screen w-full bg-gray-50">
       <Navbar usuario={usuario} />
-      <main className="flex-1 overflow-y-auto p-6" style={{ display: "flex", flexDirection: "row",justifyContent: "space-between", overflowY: "auto" }}>
+      <main className="flex-1 overflow-y-auto p-6" style={{display: "flex", flexDirection: "column", width: "100%", maxWidth:"1024px", justifyContent: "center", alignItems: "center", gap:"20px"}}>
         <h1 className="text-2xl font-bold mb-6">Todas as Turmas</h1>
 
         {loading ? (
           <p>Carregando turmas...</p>
         ) : turmas.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{ width:"1020px", display: "flex", flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", overflowY: "auto" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{display: "flex", margin: "0 auto", flexDirection: "row", flexWrap: "wrap", width: "100%", maxWidth:"1024px", justifyContent: "center", alignItems: "center", gap:"24px"}}>
             {turmas.map((turma) => (
               <div
                 key={turma.Id}
@@ -264,24 +317,36 @@ const criarTurma = async () => {
                   )}
                 </ul>
 
-                <Typography sx={{ mt: 2, fontWeight: "bold" }}>Disciplinas:</Typography>
+                <Typography sx={{ mt: 2, fontWeight: "bold" }}>Disciplinas e Professores:</Typography>
                 <ul className="list-disc list-inside max-h-40 overflow-y-auto">
                   {turmaSelecionada.disciplinas?.length ? (
-                    turmaSelecionada.disciplinas.map((d) => <li key={d.Id}>{d.Nome}</li>)
+                    turmaSelecionada.disciplinas.map((d) => {
+                      // Procurar o professor que tem essa disciplina
+                      // turmaSelecionada.professores pode não ter o nome completo, então use o estado professores
+                      const profId = turmaSelecionada.professores?.find((p) => p.Disciplinas.includes(d.Id.toString()))?.Id;
+                      const prof = professores.find((p) => p.Id === profId);
+                      return (
+                        <li key={d.Id}>
+                          {d.Nome} {prof ? ` - Professor: ${prof.Nome}` : ""}
+                        </li>
+                      );
+                    })
                   ) : (
                     <li>Nenhuma disciplina cadastrada.</li>
                   )}
                 </ul>
-
-                <Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end", gap: 2 }}>
-                  <Button color="error" variant="outlined" onClick={() => handleDeleteTurma(turmaSelecionada)}>
-                    Excluir
-                  </Button>
-                  <Button variant="contained" onClick={handleOpenEditar}>
-                    Editar
-                  </Button>
-                </Box>
               </>
+            )}
+            {turmaSelecionada && (
+              <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
+              <Button onClick={() => handleOpenEditar()} sx={{ mr: 2 }}>
+                Editar
+              </Button>
+              <Button onClick={() => handleDeleteTurma(turmaSelecionada)} sx={{ mr: 2 }}>
+                Excluir
+              </Button>
+                <Button onClick={handleCloseDetalhes}>Fechar</Button>
+              </Box>
             )}
           </Box>
         </Modal>
@@ -300,6 +365,36 @@ const criarTurma = async () => {
             />
             <Input value={editTurma?.Turno || ""} placeholder="Turno" onChange={(e) => handleEditChange("Turno", e.target.value)} />
             <Input value={editTurma?.Sala || ""} placeholder="Sala" onChange={(e) => handleEditChange("Sala", e.target.value)} />
+            <Input
+              type="number"
+              value={editTurma?.CapacidadeMaxima || ""}
+              placeholder="Capacidade Máxima"
+              onChange={(e) => handleEditChange("CapacidadeMaxima", Number(e.target.value))}
+            />
+
+            {/* Seleção de professores por disciplina */}
+            <Typography sx={{ fontWeight: 600 }}>Professores por disciplina:</Typography>
+            {editTurma?.disciplinas?.map((d) => (
+              <Box key={d.Id} sx={{ mb: 2 }}>
+                <Typography>{d.Nome}</Typography>
+                <select
+                  value={professoresPorDisciplina[d.Id] || ""}
+                  onChange={(e) =>
+                    setProfessoresPorDisciplina({
+                      ...professoresPorDisciplina,
+                      [d.Id]: Number(e.target.value),
+                    })
+                  }
+                >
+                  <option value="">Selecione um professor</option>
+                  {professores.map((prof) => (
+                    <option key={prof.Id} value={prof.Id}>
+                      {prof.Nome}
+                    </option>
+                  ))}
+                </select>
+              </Box>
+            ))}
 
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
               <Button variant="outlined" onClick={handleCloseEditar}>
@@ -314,18 +409,7 @@ const criarTurma = async () => {
 
         {/* Modal Criar */}
         <Modal open={openCriar} onClose={() => setOpenCriar(false)}>
-          <Box
-            sx={{
-              borderRadius: 4,
-              maxWidth: 600,
-              bgcolor: "background.paper",
-              p: 6,
-              mx: "auto",
-              my: "5vh",
-              maxHeight: "80vh",
-              overflowY: "auto",
-            }}
-          >
+          <Box sx={{ ...styleModal, maxWidth: 600 }}>
             <Typography variant="h5" sx={{ mb: 4, fontWeight: 700, color: "#4F46E5" }}>
               Criar turma
             </Typography>
@@ -342,13 +426,17 @@ const criarTurma = async () => {
             <Box sx={{ maxHeight: 150, overflowY: "auto", mb: 3, border: "1px solid #e5e7eb", borderRadius: 1, p: 2 }}>
               {alunos.map((a) => (
                 <label key={a.RA} className="flex items-center gap-2">
-                  <input type="checkbox" checked={selectedAlunos.some((al) => al.RA === a.RA)} onChange={() => {
-                    if (selectedAlunos.some((al) => al.RA === a.RA)) {
-                      setSelectedAlunos(selectedAlunos.filter((al) => al.RA !== a.RA));
-                    } else {
-                      setSelectedAlunos([...selectedAlunos, a]);
-                    }
-                  }} />
+                  <input
+                    type="checkbox"
+                    checked={selectedAlunos.some((al) => al.RA === a.RA)}
+                    onChange={() => {
+                      if (selectedAlunos.some((al) => al.RA === a.RA)) {
+                        setSelectedAlunos(selectedAlunos.filter((al) => al.RA !== a.RA));
+                      } else {
+                        setSelectedAlunos([...selectedAlunos, a]);
+                      }
+                    }}
+                  />
                   {a.Nome}
                 </label>
               ))}
@@ -359,17 +447,53 @@ const criarTurma = async () => {
             <Box sx={{ maxHeight: 150, overflowY: "auto", mb: 3, border: "1px solid #e5e7eb", borderRadius: 1, p: 2 }}>
               {disciplinas.map((d) => (
                 <label key={d.Codigo} className="flex items-center gap-2">
-                  <input type="checkbox" checked={selectedDisciplinas.some((disc) => disc.Codigo === d.Codigo)} onChange={() => {
-                    if (selectedDisciplinas.some((disc) => disc.Codigo === d.Codigo)) {
-                      setSelectedDisciplinas(selectedDisciplinas.filter((disc) => disc.Codigo !== d.Codigo));
-                    } else {
-                      setSelectedDisciplinas([...selectedDisciplinas, d]);
-                    }
-                  }} />
+                  <input
+                    type="checkbox"
+                    checked={selectedDisciplinas.some((disc) => disc.Codigo === d.Codigo)}
+                    onChange={() => {
+                      if (selectedDisciplinas.some((disc) => disc.Codigo === d.Codigo)) {
+                        setSelectedDisciplinas(selectedDisciplinas.filter((disc) => disc.Codigo !== d.Codigo));
+                        // Remover professor da disciplina
+                        const copy = { ...professoresPorDisciplina };
+                        delete copy[d.Id];
+                        setProfessoresPorDisciplina(copy);
+                      } else {
+                        setSelectedDisciplinas([...selectedDisciplinas, d]);
+                      }
+                    }}
+                  />
                   {d.Nome}
                 </label>
               ))}
             </Box>
+
+            {/* Seleção de professores por disciplina */}
+            {selectedDisciplinas.length > 0 && (
+              <>
+                <Typography sx={{ fontWeight: 600 }}>Professores por disciplina:</Typography>
+                {selectedDisciplinas.map((d) => (
+                  <Box key={d.Id} sx={{ mb: 2 }}>
+                    <Typography>{d.Nome}</Typography>
+                    <select
+                      value={professoresPorDisciplina[d.Id] || ""}
+                      onChange={(e) =>
+                        setProfessoresPorDisciplina({
+                          ...professoresPorDisciplina,
+                          [d.Id]: Number(e.target.value),
+                        })
+                      }
+                    >
+                      <option value="">Selecione um professor</option>
+                      {professores.map((prof) => (
+                        <option key={prof.Id} value={prof.Id}>
+                          {prof.Nome}
+                        </option>
+                      ))}
+                    </select>
+                  </Box>
+                ))}
+              </>
+            )}
 
             <Button variant="contained" fullWidth onClick={criarTurma} sx={{ backgroundColor: "#4F46E5" }}>
               Criar Turma
@@ -392,3 +516,4 @@ const criarTurma = async () => {
     </div>
   );
 }
+

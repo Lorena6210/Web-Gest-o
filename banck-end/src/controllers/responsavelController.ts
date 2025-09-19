@@ -85,3 +85,24 @@ export const deleteResponsavel = (req: Request, res: Response) => {
     res.json({ message: 'Responsável desativado com sucesso' });
   });
 };
+
+export const getAlunosByResponsavel = (req: Request, res: Response) => {
+  const { id } = req.params; // id do responsável
+  const query = `
+    SELECT a.*
+    FROM Aluno a
+    JOIN Aluno_Responsavel ar ON a.Id = ar.Id_Aluno
+    WHERE ar.Id_Responsavel = ?
+      AND ar.Status = 'Ativo'
+      AND a.Status = 'Ativo'
+  `;
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Erro ao buscar alunos do responsável' });
+    }
+    if (!Array.isArray(results) || results.length === 0) {
+      return res.status(404).json({ error: 'Nenhum aluno encontrado para este responsável' });
+    }
+    res.status(200).json(results);
+  });
+};

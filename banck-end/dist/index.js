@@ -17,8 +17,12 @@ const turmaRoutes_1 = __importDefault(require("./routes/turmaRoutes"));
 const disciplinaRoutes_1 = __importDefault(require("./routes/disciplinaRoutes"));
 const historicoMedicoRoutes_1 = __importDefault(require("./routes/historicoMedicoRoutes"));
 const loginRoutes_1 = __importDefault(require("./routes/loginRoutes"));
+const boletimRoutes_1 = __importDefault(require("./routes/boletimRoutes"));
+const eventosRoutes_1 = __importDefault(require("./routes/eventosRoutes"));
+const provaRoutes_1 = __importDefault(require("./routes/provaRoutes"));
+const GradeCurricularRouter_1 = __importDefault(require("./routes/GradeCurricularRouter"));
 const app = (0, express_1.default)();
-const PORT = 3000;
+// const PORT = 3000;
 // Middleware
 app.use((0, cors_1.default)());
 app.use(express_1.default.json());
@@ -35,7 +39,11 @@ app.use('/turmas', turmaRoutes_1.default);
 app.use('/disciplinas', disciplinaRoutes_1.default);
 app.use('/historico-medico', historicoMedicoRoutes_1.default);
 app.use('/login', loginRoutes_1.default);
+app.use('/boletim', boletimRoutes_1.default);
+app.use('/eventos', eventosRoutes_1.default);
+app.use('/provas', provaRoutes_1.default);
+app.use('/grade-curricular', GradeCurricularRouter_1.default);
 // Iniciar o servidor
-app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT}`);
+app.listen(3001, () => {
+    console.log(`Servidor rodando na porta 3001`);
 });

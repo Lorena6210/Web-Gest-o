@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { FaPlus } from "react-icons/fa";
 import { fetchAlunos, createAluno, updateAluno, deleteAluno } from "@/lib/AlunoApi";
+import { TurmaCompleta } from "@/lib/TurmaApi";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
@@ -10,9 +11,11 @@ import Input from "@mui/material/Input";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert, { AlertColor } from "@mui/material/Alert";
 import Navbar from "../../Navbar";
+import styles from "../css/TodasAlunosPage.module.css";
+import { Radio, RadioGroup, FormControl, FormControlLabel, FormLabel } from "@mui/material";
 
-export interface Aluno {
-  Id?: number;
+interface AlunoAPI {
+  Id: number;
   Nome: string;
   CPF: string;
   Senha: string;
@@ -22,6 +25,23 @@ export interface Aluno {
   FotoPerfil: string;
   Status: string;
   RA: string;
+  TurmaId?: number;
+}
+
+
+// types.ts
+interface Aluno {
+  Id: number;
+  Nome: string;
+  CPF: string;
+  Senha: string;
+  Telefone: string;
+  DataNascimento: string;
+  Genero: string;
+  FotoPerfil: string;
+  Status: string;
+  RA: string;
+  TurmaId?: number;
 }
 
 interface Usuario {
@@ -30,14 +50,31 @@ interface Usuario {
   Tipo: string;
 }
 
+interface MeuComponenteProps {
+  Id: number;
+  turma: TurmaCompleta;
+}
+interface TurmaCompleta {
+    Id: number;
+    Nome: string;
+    Serie: string | null;
+    AnoLetivo: number;
+    Turno: string | null;
+    Sala?: string;
+    CapacidadeMaxima?: number;
+    alunos?: AlunoAPI[];
+}
+
 export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
+  const [turmas, setTurmas] = useState<MeuComponenteProps[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modais
   const [openCriar, setOpenCriar] = useState(false);
   const [openEditar, setOpenEditar] = useState(false);
   const [alunoSelecionado, setAlunoSelecionado] = useState<Aluno | null>(null);
+  const [editMode, setEditMode] = useState(false);
 
   // Snackbar
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -52,6 +89,7 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
 
   // Novo aluno
   const [novoAluno, setNovoAluno] = useState<Aluno>({
+    Id: 0,
     Nome: "",
     CPF: "",
     Senha: "",
@@ -61,22 +99,70 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
     FotoPerfil: "",
     Status: "Ativo",
     RA: "",
+    TurmaId: undefined,
   });
 
-  useEffect(() => {
-    const carregarAlunos = async () => {
-      try {
-        const dados = await fetchAlunos();
-        setAlunos(dados);
-      } catch (error) {
-        console.error(error);
+
+  // Carregar alunos + turmas
+useEffect(() => {
+  const carregarDados = async () => {
+    try {
+    const alunosAPI: AlunoAPI[] = await fetchAlunos();
+
+      if (!alunosAPI) {
         showSnackbar("Erro ao carregar alunos", "error");
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
-    carregarAlunos();
-  }, []);
+
+      // Buscar todas as turmas
+      const response = await fetch("http://localhost:3001/turmas/");
+      const dados = await response.json();
+
+      if (dados.success && Array.isArray(dados.turmas)) {
+        const turmasData: TurmaCompleta[] = dados.turmas;
+
+        setTurmas(
+          turmasData.map((t: TurmaCompleta) => ({
+            Id: t.Id,
+            turma: t,
+          }))
+        );
+
+        // Associar RA -> TurmaId
+      const alunosComTurma: Aluno[] = alunosAPI.map((aluno: AlunoAPI) => {
+        const turmaEncontrada = turmasData.find((turma: TurmaCompleta) =>
+          turma.alunos?.some((a: AlunoAPI) => a.RA === aluno.RA)
+        );
+        return {
+          Id: aluno.Id, // ou outro valor que faça sentido para o seu aplicativo
+          Nome: aluno.Nome,
+          CPF: aluno.CPF,
+          Senha: aluno.Senha,
+          Telefone: aluno.Telefone,
+          DataNascimento: aluno.DataNascimento,
+          Genero: aluno.Genero,
+          FotoPerfil: aluno.FotoPerfil,
+          Status: aluno.Status,
+          RA: aluno.RA,
+          TurmaId: turmaEncontrada ? turmaEncontrada.Id : undefined,
+        };
+      });
+
+      setAlunos(alunosComTurma);
+      } else {
+        showSnackbar("Erro ao carregar turmas", "error");
+      }
+    } catch (error) {
+      console.error(error);
+      showSnackbar("Erro ao carregar dados", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  carregarDados();
+}, []);
+
 
   const salvarNovoAluno = async () => {
     try {
@@ -85,6 +171,7 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
       showSnackbar("Aluno cadastrado com sucesso!", "success");
       setOpenCriar(false);
       setNovoAluno({
+        Id: 0,
         Nome: "",
         CPF: "",
         Senha: "",
@@ -94,6 +181,7 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
         FotoPerfil: "",
         Status: "Ativo",
         RA: "",
+        TurmaId: undefined,
       });
     } catch (error) {
       console.error(error);
@@ -105,9 +193,12 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
     if (!alunoSelecionado) return;
     try {
       const alunoAtualizado = await updateAluno(alunoSelecionado);
-      setAlunos((prev) => prev.map((a) => (a.Id === alunoAtualizado.Id ? alunoAtualizado : a)));
+      setAlunos((prev) =>
+        prev.map((a) => (a.Id === alunoAtualizado.Id ? alunoAtualizado : a))
+      );
       showSnackbar("Aluno atualizado com sucesso!", "success");
       setOpenEditar(false);
+      setEditMode(false);
     } catch (error) {
       console.error(error);
       showSnackbar("Erro ao atualizar aluno", "error");
@@ -121,28 +212,30 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
       await deleteAluno(id);
       setAlunos((prev) => prev.filter((a) => a.Id !== id));
       showSnackbar("Aluno excluído com sucesso!", "success");
+      setOpenEditar(false);
     } catch (error) {
       console.error(error);
       showSnackbar("Erro ao excluir aluno", "error");
     }
   };
 
-  const styleModal = {
-    borderRadius: 4,
-    maxWidth: 500,
-    bgcolor: "background.paper",
-    p: 4,
-    mx: "auto",
-    my: "10vh",
-    maxHeight: "80vh",
-    overflowY: "auto",
-  };
-
   return (
-    <div className="flex flex-col h-screen w-full bg-gray-50">
+    <div className={`flex flex-col h-screen w-full ${styles["page-container"]}`}>
       <Navbar usuario={usuario} />
-      <main style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", flex: 1,maxWidth:"1024px", width: "100%" }} className="flex-1 overflow-y-auto p-6">
-        <h1 className="text-2xl font-bold mb-6">Todos os Alunos</h1>
+      <main
+        style={{
+          position: "relative",
+          left: "100px",
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          maxWidth: "1024px",
+          width: "100%",
+          padding: "1.5rem 1.5rem 3rem",
+        }}
+        className={`flex-1 overflow-y-auto p-6 max-w-[1024px] mx-auto w-full ${styles["main-content"]}`}
+      >
+        <h1 className={styles["page-title"]}>Todos os Alunos</h1>
 
         {loading ? (
           <p>Carregando alunos...</p>
@@ -151,16 +244,20 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
             {alunos.map((aluno) => (
               <div
                 key={aluno.Id}
-                className="bg-white shadow-lg rounded-xl p-6 cursor-pointer hover:shadow-xl"
+                className={`${styles["aluno-card"]} cursor-pointer`}
                 onClick={() => {
                   setAlunoSelecionado(aluno);
                   setOpenEditar(true);
+                  setEditMode(false);
                 }}
               >
-                <h2 className="text-xl font-bold">{aluno.Nome}</h2>
-                <p className="text-gray-600">RA: {aluno.RA}</p>
-                <p className="text-sm text-gray-500">{aluno.CPF}</p>
-                <p className="text-sm text-gray-500">Status: {aluno.Status}</p>
+                <h2 className={styles["aluno-nome"]}>{aluno.Nome}</h2>
+                <p className={styles["aluno-info"]}>RA: {aluno.RA}</p>
+                <p className={styles["aluno-info"]}>{aluno.CPF}</p>
+                <p className={styles["aluno-status"]}>Status: {aluno.Status}</p>
+                <p className={styles["aluno-info"]}>
+                  Turma: {turmas.find((t) => t.Id === aluno.TurmaId)?.turma.Nome || "Sem turma"}
+                </p>
               </div>
             ))}
           </div>
@@ -170,46 +267,81 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
 
         {/* Modal Criar */}
         <Modal open={openCriar} onClose={() => setOpenCriar(false)}>
-          <Box sx={styleModal}>
-            <Typography variant="h6" sx={{ mb: 3 }}>Cadastrar Aluno</Typography>
-            <Input fullWidth placeholder="Nome" value={novoAluno.Nome} onChange={(e) => setNovoAluno({ ...novoAluno, Nome: e.target.value })} sx={{ mb: 2 }} />
-            <Input fullWidth placeholder="CPF" value={novoAluno.CPF} onChange={(e) => setNovoAluno({ ...novoAluno, CPF: e.target.value })} sx={{ mb: 2 }} />
-            <Input fullWidth placeholder="Telefone" value={novoAluno.Telefone} onChange={(e) => setNovoAluno({ ...novoAluno, Telefone: e.target.value })} sx={{ mb: 2 }} />
-            <Input type="date" fullWidth value={novoAluno.DataNascimento} onChange={(e) => setNovoAluno({ ...novoAluno, DataNascimento: e.target.value })} sx={{ mb: 2 }} />
-            <Input fullWidth placeholder="Gênero" value={novoAluno.Genero} onChange={(e) => setNovoAluno({ ...novoAluno, Genero: e.target.value })} sx={{ mb: 2 }} />
-            <Input fullWidth placeholder="RA" value={novoAluno.RA} onChange={(e) => setNovoAluno({ ...novoAluno, RA: e.target.value })} sx={{ mb: 2 }} />
-            <Input 
-            fullWidth 
-            type="password"
-            placeholder="Senha"
-            value={novoAluno.Senha} 
-            onChange={(e) => setNovoAluno({ ...novoAluno, Senha: e.target.value })} 
-            sx={{ mb: 2 }} 
-          />
-          <Button variant="contained" fullWidth onClick={salvarNovoAluno}>
-              Salvar
-            </Button>
+          <Box className={styles["modal-box"]}>
+            <Typography variant="h6" sx={{ mb: 3 }}>
+              Cadastrar Aluno
+            </Typography>
+            <Input placeholder="Nome" value={novoAluno.Nome} onChange={(e) => setNovoAluno({ ...novoAluno, Nome: e.target.value })} />
+            <Input placeholder="RA" value={novoAluno.RA} onChange={(e) => setNovoAluno({ ...novoAluno, RA: e.target.value })} />
+            <Input placeholder="CPF" value={novoAluno.CPF} onChange={(e) => setNovoAluno({ ...novoAluno, CPF: e.target.value })} />
+            <Input placeholder="Senha" type="password" value={novoAluno.Senha} onChange={(e) => setNovoAluno({ ...novoAluno, Senha: e.target.value })} />
+            <Input placeholder="Data de Nascimento" type="date" value={novoAluno.DataNascimento} onChange={(e) => setNovoAluno({ ...novoAluno, DataNascimento: e.target.value })} />
+            <Input placeholder="Telefone" value={novoAluno.Telefone} onChange={(e) => setNovoAluno({ ...novoAluno, Telefone: e.target.value })} />
+
+            <FormControl>
+              <FormLabel>Gênero</FormLabel>
+              <RadioGroup row value={novoAluno.Genero} onChange={(e) => setNovoAluno({ ...novoAluno, Genero: e.target.value })}>
+                <FormControlLabel value="Masculino" control={<Radio />} label="Masculino" />
+                <FormControlLabel value="Feminino" control={<Radio />} label="Feminino" />
+              </RadioGroup>
+            </FormControl>
+
+            <Button fullWidth sx={{ mt: 2 }} onClick={salvarNovoAluno}>Salvar</Button>
           </Box>
         </Modal>
 
-        {/* Modal Editar */}
+        {/* Modal Editar / Visualizar */}
         <Modal open={openEditar} onClose={() => setOpenEditar(false)}>
-          <Box sx={styleModal}>
-            {alunoSelecionado && (
+          <Box className={styles["modal-box"]}>
+            {alunoSelecionado && !editMode && (
               <>
-                <Typography variant="h6" sx={{ mb: 3 }}>Editar Aluno</Typography>
-                <Input fullWidth value={alunoSelecionado.Nome} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Nome: e.target.value })} sx={{ mb: 2 }} />
-                <Input fullWidth value={alunoSelecionado.CPF} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, CPF: e.target.value })} sx={{ mb: 2 }} />
-                <Input fullWidth value={alunoSelecionado.Telefone} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Telefone: e.target.value })} sx={{ mb: 2 }} />
-                <Input fullWidth value={alunoSelecionado.RA} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, RA: e.target.value })} sx={{ mb: 2 }} />
+                <Typography variant="h6" sx={{ mb: 2 }}>Informações do Aluno</Typography>
+                <p><strong>Nome:</strong> {alunoSelecionado.Nome}</p>
+                <p><strong>RA:</strong> {alunoSelecionado.RA}</p>
+                <p><strong>CPF:</strong> {alunoSelecionado.CPF}</p>
+                <p><strong>Status:</strong> {alunoSelecionado.Status}</p>
+                <p><strong>Gênero:</strong> {alunoSelecionado.Genero}</p>
+                <p><strong>Telefone:</strong> {alunoSelecionado.Telefone}</p>
+                <p><strong>Data Nascimento:</strong> {alunoSelecionado.DataNascimento}</p>
+                <p><strong>Turma:</strong> {turmas.find((t) => t.Id === alunoSelecionado.TurmaId)?.turma.Nome || "Sem turma"}</p>
 
-                <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
-                  <Button color="error" variant="outlined" onClick={() => excluirAluno(alunoSelecionado.Id)}>
-                    Excluir
-                  </Button>
-                  <Button variant="contained" onClick={salvarEdicao}>
-                    Salvar
-                  </Button>
+                <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
+                  <Button variant="contained" onClick={() => setEditMode(true)}>Editar</Button>
+                  <Button variant="outlined" color="error" onClick={() => excluirAluno(alunoSelecionado.Id)}>Excluir</Button>
+                </Box>
+              </>
+            )}
+
+            {alunoSelecionado && editMode && (
+              <>
+                <Typography variant="h6" sx={{ mb: 2 }}>Editar Aluno</Typography>
+                <Input placeholder="Nome" value={alunoSelecionado.Nome} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Nome: e.target.value })} />
+                <Input placeholder="RA" value={alunoSelecionado.RA} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, RA: e.target.value })} />
+                <Input placeholder="CPF" value={alunoSelecionado.CPF} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, CPF: e.target.value })} />
+                <Input placeholder="Telefone" value={alunoSelecionado.Telefone} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Telefone: e.target.value })} />
+                <Input placeholder="Data Nascimento" type="date" value={alunoSelecionado.DataNascimento} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, DataNascimento: e.target.value })} />
+
+                <FormControl>
+                  <FormLabel>Gênero</FormLabel>
+                  <RadioGroup row value={alunoSelecionado.Genero} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Genero: e.target.value })}>
+                    <FormControlLabel value="Masculino" control={<Radio />} label="Masculino" />
+                    <FormControlLabel value="Feminino" control={<Radio />} label="Feminino" />
+                  </RadioGroup>
+                </FormControl>
+
+                <FormControl fullWidth sx={{ mt: 2 }}>
+                  <FormLabel>Turma</FormLabel>
+                  <select value={alunoSelecionado.TurmaId || ""} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, TurmaId: Number(e.target.value) })}>
+                    <option value="">Selecione uma turma</option>
+                    {turmas.map((turma) => (
+                      <option key={turma.Id} value={turma.Id}>{turma.turma.Nome}</option>
+                    ))}
+                  </select>
+                </FormControl>
+
+                <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
+                  <Button variant="outlined" color="error" onClick={() => excluirAluno(alunoSelecionado.Id)}>Excluir</Button>
+                  <Button variant="contained" onClick={salvarEdicao}>Salvar</Button>
                 </Box>
               </>
             )}
@@ -224,7 +356,7 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
         </Snackbar>
 
         {/* Botão flutuante Criar */}
-        <Box onClick={() => setOpenCriar(true)} className="fixed bottom-6 right-6 bg-indigo-600 text-white p-5 rounded-full shadow-lg cursor-pointer hover:bg-indigo-700 transition-colors">
+        <Box onClick={() => setOpenCriar(true)} className={styles["floating-button"]}>
           <FaPlus size={20} />
         </Box>
       </main>

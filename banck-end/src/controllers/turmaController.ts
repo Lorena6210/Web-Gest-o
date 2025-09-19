@@ -883,3 +883,68 @@ export function excluirTurma(req: Request, res: Response) {
     res.status(500).json({ success: false, message: 'Erro ao excluir turma', error: error instanceof Error ? error.message : error });
   });
 }
+
+export async function obterTurmaPorId(req: Request, res: Response) {
+  const { id } = req.params;
+
+  try {
+    // Buscar dados básicos da turma
+    const turmas = await queryAsync<RowDataPacket[]>(`
+      SELECT t.Id, t.Nome, t.AnoLetivo, s.Nome AS Serie, tr.Nome AS Turno, sl.Nome AS Sala
+      FROM Turma t
+      LEFT JOIN Serie s ON t.Id_Serie = s.Id
+      LEFT JOIN Turno tr ON t.Id_Turno = tr.Id
+      LEFT JOIN Sala sl ON t.Id_Sala = sl.Id
+      WHERE t.Id = ? AND t.Status = 'Ativo'
+    `, [id]);
+
+    if (turmas.length === 0) {
+      return res.status(404).json({ success: false, message: 'Turma não encontrada' });
+    }
+
+    const turma = turmas[0];
+
+    // Buscar alunos da turma
+    const alunos = await queryAsync<RowDataPacket[]>(`
+      SELECT a.Id, a.Nome, a.RA, a.FotoPerfil
+      FROM Aluno a
+      INNER JOIN Aluno_Turma at ON at.Id_Aluno = a.Id
+      WHERE at.Id_Turma = ? AND at.Status = 'Ativo'
+      ORDER BY a.Nome
+    `, [id]);
+
+    // Buscar professores e disciplinas da turma
+    const professores = await queryAsync<RowDataPacket[]>(`
+      SELECT p.Id, p.Nome, p.Email, p.FotoPerfil, GROUP_CONCAT(d.Nome SEPARATOR ', ') AS Disciplinas
+      FROM Professor p
+      INNER JOIN Professor_Turma_Disciplina ptd ON ptd.Id_Professor = p.Id
+      INNER JOIN Disciplina d ON ptd.Id_Disciplina = d.Id
+      WHERE ptd.Id_Turma = ? AND ptd.Status = 'Ativo'
+      GROUP BY p.Id, p.Nome, p.Email, p.FotoPerfil
+      ORDER BY p.Nome
+    `, [id]);
+
+    // Buscar disciplinas da turma
+    const disciplinas = await queryAsync<RowDataPacket[]>(`
+      SELECT d.Id, d.Nome, d.Codigo, d.CargaHoraria
+      FROM Disciplina d
+      INNER JOIN Turma_Disciplina td ON td.Id_Disciplina = d.Id
+      WHERE td.Id_Turma = ?
+      ORDER BY d.Nome
+    `, [id]);
+
+    // Montar resposta
+    const resposta = {
+      ...turma,
+      alunos,
+      professores,
+      disciplinas
+    };
+
+    res.json({ success: true, data: resposta });
+
+  } catch (error) {
+    console.error('Erro ao obter turma:', error);
+    res.status(500).json({ success: false, message: 'Erro ao obter turma', error: error instanceof Error ? error.message : error });
+  }
+}

@@ -1,8 +1,8 @@
 // pages/responsavel/[id].tsx
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
-import { fetchTurmaCompleta, TurmaCompleta } from "@/lib/TurmaApi";
-import ResponsavelPageComponent from "@/components/ResponsavelPage";
+import { fetchTurmaCompleta, TurmaCompleta } from "@/lib/TurmaApi"
+import ResponsavelPageComponent from "@/components/responsavel/ResponsavelPage";
 
 interface Usuario {
   Nome: string;

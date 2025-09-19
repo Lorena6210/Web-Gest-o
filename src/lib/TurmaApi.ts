@@ -70,11 +70,37 @@ export interface Professor {
   Disciplinas: string;
   TotalDisciplinas: number;
 }
-export async function fetchTurmaCompleta(id: number): Promise<TurmaCompleta> {
-  const response = await fetch(`http://localhost:3000/turmas/${id}/completa`);
-  if (!response.ok) {
-    throw new Error("Erro ao obter turma completa");
+
+interface AlunoAPI {
+  Id: number;
+  Nome: string;
+  CPF: string;
+  Senha: string;
+  Telefone: string;
+  DataNascimento: string;
+  Genero: string;
+  FotoPerfil: string;
+  Status: string;
+  RA: string;
+  TurmaId?: number;
+}
+
+
+export const fetchAlunos = async (): Promise<AlunoAPI[]> => {
+  try {
+    const response = await fetch("http://localhost:3001/alunos", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) throw new Error("Erro ao buscar alunos");
+    return await response.json();
+  } catch (error) {
+    console.error("Erro ao buscar alunos:", error);
+    throw error;
   }
+};
+export async function fetchTurmaCompleta(id: number): Promise<TurmaCompleta> {
+  const response = await fetch(`http://localhost:3001/turmas/${id}/completa`);
   const json = await response.json();
   return json.data as TurmaCompleta;
 }
@@ -84,7 +110,7 @@ export const fetchTurmaDoAluno = async (
   idDisciplina?: number
 ): Promise<TurmaCompleta | null> => {
   try {
-    const response = await fetch("http://localhost:3000/turmas");
+    const response = await fetch("http://localhost:3001/turmas");
     if (!response.ok) throw new Error("Erro ao buscar turmas");
 
     const data = await response.json();
@@ -103,7 +129,7 @@ export const fetchTurmaDoAluno = async (
 
     // Buscar versão completa (com professores e gestores, se existir)
     const turmaResponse = await fetch(
-      `http://localhost:3000/turmas/${turmaAluno.Id}/completa`
+      `http://localhost:3001/turmas/${turmaAluno.Id}/completa`
     );
     if (!turmaResponse.ok) throw new Error("Erro ao buscar turma completa");
 
@@ -124,7 +150,7 @@ export const fetchTurmaDoAluno = async (
 // lib/TurmaApi.ts
 export const fetchTurmasDoProfessor = async (idProfessor: number): Promise<TurmaCompleta[]> => {
   try {
-    const response = await fetch("http://localhost:3000/turmas");
+    const response = await fetch("http://localhost:3001/turmas");
     if (!response.ok) throw new Error("Erro ao buscar turmas");
 
     const data = await response.json();
@@ -143,7 +169,7 @@ export const fetchTurmasDoProfessor = async (idProfessor: number): Promise<Turma
 // lib/TurmaApi.ts
 export const fetchTurmasDoGestor = async (idGestor: number): Promise<TurmaCompleta[]> => {
   try {
-    const response = await fetch("http://localhost:3000/turmas");
+    const response = await fetch("http://localhost:3001/turmas");
     if (!response.ok) throw new Error("Erro ao buscar turmas");
 
     const data = await response.json();
@@ -161,7 +187,7 @@ export const fetchTurmasDoGestor = async (idGestor: number): Promise<TurmaComple
 
 export const fetchTurmas = async (): Promise<TurmaCompleta[]> => {
   try {
-    const response = await fetch("http://localhost:3000/turmas");
+    const response = await fetch("http://localhost:3001/turmas");
     if (!response.ok) throw new Error("Erro ao buscar turmas");
 
     const data = await response.json();
@@ -174,14 +200,13 @@ export const fetchTurmas = async (): Promise<TurmaCompleta[]> => {
 
 export const fetchCreateTurmas = async (turma: TurmaCompleta): Promise<TurmaCompleta> => {
   try {
-    const response = await fetch("http://localhost:3000/turmas", {
+    const response = await fetch("http://localhost:3001/turmas", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(turma),
     });
-    if (!response.ok) throw new Error("Erro ao criar turma");
 
     const data = await response.json();
     return data;
@@ -193,7 +218,7 @@ export const fetchCreateTurmas = async (turma: TurmaCompleta): Promise<TurmaComp
 
 export const fetchDeleteTurma = async (turma: TurmaCompleta): Promise<TurmaCompleta> => {
   try {
-    const response = await fetch(`http://localhost:3000/turmas/${turma.Id}/excluir`, {
+    const response = await fetch(`http://localhost:3001/turmas/${turma.Id}/excluir`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

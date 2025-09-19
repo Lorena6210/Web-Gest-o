@@ -9,7 +9,7 @@ export interface Disciplina {
 
 export const fetchDisciplinas = async (): Promise<Disciplina[]> => {
   try {
-    const response = await fetch("http://localhost:3000/disciplinas", {
+    const response = await fetch("http://localhost:3001/disciplinas", {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });

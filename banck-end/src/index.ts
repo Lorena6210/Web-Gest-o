@@ -12,10 +12,13 @@ import turmaRoutes from './routes/turmaRoutes';
 import disciplinaRoutes from './routes/disciplinaRoutes';
 import historicoMedicoRoutes from './routes/historicoMedicoRoutes';
 import loginRoutes from './routes/loginRoutes';
-
+import boletimRoutes from './routes/boletimRoutes';
+import eventosRoutes from './routes/eventosRoutes';
+import provaRouter from './routes/provaRoutes';
+import GradeCurricularRouter from './routes/GradeCurricularRouter';
 
 const app = express();
-const PORT = 3000;
+// const PORT = 3000;
 
 // Middleware
 app.use(cors());
@@ -34,8 +37,13 @@ app.use('/turmas', turmaRoutes);
 app.use('/disciplinas', disciplinaRoutes);
 app.use('/historico-medico', historicoMedicoRoutes);
 app.use('/login', loginRoutes);
+app.use('/boletim', boletimRoutes);
+app.use('/eventos', eventosRoutes);
+app.use('/provas', provaRouter);
+app.use('/grade-curricular', GradeCurricularRouter);
+
 
 // Iniciar o servidor
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+app.listen(3001, () => {
+  console.log(`Servidor rodando na porta 3001`);
 });

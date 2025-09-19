@@ -28,6 +28,7 @@ exports.listarTurmasComDetalhes = listarTurmasComDetalhes;
 exports.adicionarNotaItem = adicionarNotaItem;
 exports.editarTurmaParcial = editarTurmaParcial;
 exports.excluirTurma = excluirTurma;
+exports.obterTurmaPorId = obterTurmaPorId;
 const db_1 = __importDefault(require("../db"));
 // Helper genérico com Promise
 const queryAsync = (sql, params) => {
@@ -738,5 +739,60 @@ function excluirTurma(req, res) {
         .catch(error => {
         console.error('Erro ao excluir turma:', error);
         res.status(500).json({ success: false, message: 'Erro ao excluir turma', error: error instanceof Error ? error.message : error });
+    });
+}
+function obterTurmaPorId(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { id } = req.params;
+        try {
+            // Buscar dados básicos da turma
+            const turmas = yield queryAsync(`
+      SELECT t.Id, t.Nome, t.AnoLetivo, s.Nome AS Serie, tr.Nome AS Turno, sl.Nome AS Sala
+      FROM Turma t
+      LEFT JOIN Serie s ON t.Id_Serie = s.Id
+      LEFT JOIN Turno tr ON t.Id_Turno = tr.Id
+      LEFT JOIN Sala sl ON t.Id_Sala = sl.Id
+      WHERE t.Id = ? AND t.Status = 'Ativo'
+    `, [id]);
+            if (turmas.length === 0) {
+                return res.status(404).json({ success: false, message: 'Turma não encontrada' });
+            }
+            const turma = turmas[0];
+            // Buscar alunos da turma
+            const alunos = yield queryAsync(`
+      SELECT a.Id, a.Nome, a.RA, a.FotoPerfil
+      FROM Aluno a
+      INNER JOIN Aluno_Turma at ON at.Id_Aluno = a.Id
+      WHERE at.Id_Turma = ? AND at.Status = 'Ativo'
+      ORDER BY a.Nome
+    `, [id]);
+            // Buscar professores e disciplinas da turma
+            const professores = yield queryAsync(`
+      SELECT p.Id, p.Nome, p.Email, p.FotoPerfil, GROUP_CONCAT(d.Nome SEPARATOR ', ') AS Disciplinas
+      FROM Professor p
+      INNER JOIN Professor_Turma_Disciplina ptd ON ptd.Id_Professor = p.Id
+      INNER JOIN Disciplina d ON ptd.Id_Disciplina = d.Id
+      WHERE ptd.Id_Turma = ? AND ptd.Status = 'Ativo'
+      GROUP BY p.Id, p.Nome, p.Email, p.FotoPerfil
+      ORDER BY p.Nome
+    `, [id]);
+            // Buscar disciplinas da turma
+            const disciplinas = yield queryAsync(`
+      SELECT d.Id, d.Nome, d.Codigo, d.CargaHoraria
+      FROM Disciplina d
+      INNER JOIN Turma_Disciplina td ON td.Id_Disciplina = d.Id
+      WHERE td.Id_Turma = ?
+      ORDER BY d.Nome
+    `, [id]);
+            // Montar resposta
+            const resposta = Object.assign(Object.assign({}, turma), { alunos,
+                professores,
+                disciplinas });
+            res.json({ success: true, data: resposta });
+        }
+        catch (error) {
+            console.error('Erro ao obter turma:', error);
+            res.status(500).json({ success: false, message: 'Erro ao obter turma', error: error instanceof Error ? error.message : error });
+        }
     });
 }

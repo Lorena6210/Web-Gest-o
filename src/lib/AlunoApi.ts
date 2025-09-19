@@ -12,7 +12,7 @@ export interface Aluno {
 
 export const fetchAlunos = async (): Promise<Aluno[]> => {
   try {
-    const response = await fetch("http://localhost:3000/alunos", {
+    const response = await fetch("http://localhost:3001/alunos", {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
@@ -26,7 +26,7 @@ export const fetchAlunos = async (): Promise<Aluno[]> => {
 
 export const createAluno = async (aluno: Aluno) => {
   try {
-    const response = await fetch("http://localhost:3000/alunos", {
+    const response = await fetch("http://localhost:3001/alunos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(aluno),
@@ -45,12 +45,11 @@ export const createAluno = async (aluno: Aluno) => {
 
 export const updateAluno = async (aluno: Aluno) => {
   try {
-    const response = await fetch(`http://localhost:3000/alunos/${aluno.RA}`, {
+    const response = await fetch(`http://localhost:3001/alunos/${aluno.RA}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(aluno),
     });
-    if (!response.ok) throw new Error("Erro ao atualizar aluno");
     return await response.json();
   } catch (error) {
     console.error("Erro ao atualizar aluno:", error);
@@ -60,7 +59,7 @@ export const updateAluno = async (aluno: Aluno) => {
 
 export const deleteAluno = async (id: number) => {
   try {
-    const response = await fetch(`http://localhost:3000/alunos/${id}`, {
+    const response = await fetch(`http://localhost:3001/alunos/${id}`, {
       method: "DELETE",
     });
     if (!response.ok) throw new Error("Erro ao deletar aluno");

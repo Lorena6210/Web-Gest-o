@@ -95,8 +95,8 @@ export const buscarResponsavelPorEmail = async (req: Request, res: Response) => 
         const connection = await mysql.createConnection({
         host: 'localhost',
         user: 'admin',
-        password: 'senha123',
-        database: 'NovoLearnHub'
+        password: 'senha@123',
+        database: 'ControlHub'
         });
 
         const [rows] = await connection.execute<Responsavel[]>(

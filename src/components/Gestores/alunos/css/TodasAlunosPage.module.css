@@ -1,0 +1,185 @@
+/* Container principal */
+.page-container {
+  background: linear-gradient(180deg, #eef2ff 0%, #f9fafb 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main content */
+.main-content {
+  max-width: 1024px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 3rem;
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  overflow-y: auto;
+}
+
+/* Título */
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #4f46e5; /* Indigo-600 */
+  margin-bottom: 1.5rem;
+  text-shadow: 0 1px 3px rgba(79, 70, 229, 0.3);
+}
+
+/* Card do aluno */
+.aluno-card {
+  display: "flex";
+  flex-direction: "row";
+  flex-wrap: "wrap";
+  justify-content: "space-between";
+  align-items: "center";
+  margin-bottom: 1.5rem;
+  background-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+  flex: 1 1 calc(33% - 1rem);
+  max-width: calc(25% - 1rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.aluno-card:hover {
+  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.3);
+  transform: translateY(-4px);
+}
+
+/* Nome do aluno */
+.aluno-nome {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #3730a3; /* Indigo-800 */
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.02em;
+}
+
+/* RA e CPF */
+.aluno-info {
+  font-size: 0.9rem;
+  color: #6b7280; /* Gray-500 */
+  margin-bottom: 0.25rem;
+  font-style: italic;
+}
+
+/* Status */
+.aluno-status {
+  font-size: 0.85rem;
+  color: #9ca3af; /* Gray-400 */
+  font-weight: 600;
+}
+
+/* Modal box */
+.modal-box {
+  border-radius: 1rem !important;
+  max-width: 500px !important;
+  background-color: #ffffff !important;
+  padding: 2rem !important;
+  margin: 10vh auto !important;
+  max-height: 80vh !important;
+  overflow-y: auto !important;
+  box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Inputs do modal */
+.modal-input {
+  width: 100% !important;
+  border: 1.5px solid #c7d2fe !important; /* Indigo-200 */
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 1rem !important;
+  margin-bottom: 1rem !important;
+  font-size: 1rem !important;
+  transition: border-color 0.3s ease !important;
+}
+
+.modal-input:focus {
+  border-color: #6366f1 !important; /* Indigo-500 */
+  outline: none !important;
+  box-shadow: 0 0 5px rgba(99, 102, 241, 0.5) !important;
+}
+
+/* Botões */
+.btn-primary {
+  background-color: #4f46e5 !important; /* Indigo-600 */
+  color: white !important;
+  font-weight: 600 !important;
+  border-radius: 0.5rem !important;
+  padding: 0.75rem 0 !important;
+  width: 100% !important;
+  transition: background-color 0.3s ease !important;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca !important; /* Indigo-700 */
+}
+
+/* Botão de excluir */
+.btn-danger {
+  border: 2px solid #ef4444 !important; /* Red-500 */
+  color: #b91c1c !important; /* Red-700 */
+  font-weight: 600 !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 1rem !important;
+  transition: background-color 0.3s ease, color 0.3s ease !important;
+}
+
+.btn-danger:hover {
+  background-color: #f87171 !important; /* Red-400 */
+  color: white !important;
+}
+
+/* Container dos botões no modal editar */
+.modal-buttons {
+  display: flex !important;
+  justify-content: space-between !important;
+  margin-top: 1.5rem !important;
+}
+
+/* Botão flutuante */
+.floating-button {
+  position: fixed !important;
+  bottom: 1.5rem !important;
+  right: 1.5rem !important;
+  background-color: #4f46e5 !important; /* Indigo-600 */
+  color: white !important;
+  padding: 1.25rem !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4) !important;
+  cursor: pointer !important;
+  transition: background-color 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 1000 !important;
+}
+
+.floating-button:hover {
+  background-color: #4338ca !important; /* Indigo-700 */
+}
+
+/* Snackbar customizado */
+.MuiAlert-filledSuccess {
+  background-color: #4ade80 !important; /* verde claro */
+  color: #065f46 !important;
+  font-weight: 600;
+}
+.MuiAlert-filledError {
+  background-color: #f87171 !important; /* vermelho claro */
+  color: #7f1d1d !important;
+  font-weight: 600;
+}
+
+.modal-box {
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 16px;
+}

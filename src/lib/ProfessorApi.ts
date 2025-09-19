@@ -1,5 +1,23 @@
 // lib/api.ts
-export const fetchProfessores = async (id: number) => {
+import { TurmaCompleta } from "@/Types/Turma";
+
+export const fetchProfessores = async () => {
+  try {
+    const response = await fetch(`http://localhost:3001/professores`);
+    if (!response.ok) {
+      const text = await response.text(); // pega corpo do erro para debugar
+      throw new Error(`Erro na resposta do servidor: ${response.status} - ${text}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Erro ao carregar professor:", error);
+    throw error;
+  }
+};
+
+
+export const fetchPequisaProfessores = async (id: number) => {
   try {
     const response = await fetch(`http://localhost:3001/professores/${id}`);
     if (!response.ok) {
@@ -16,7 +34,7 @@ export const fetchProfessores = async (id: number) => {
 
 export const fetchGestores = async () => {
   try {
-    const response = await fetch(`http://localhost:3000/responsaveis`);
+    const response = await fetch(`http://localhost:3001/responsaveis`);
     if (!response.ok) {
       throw new Error("Erro na resposta do servidor");
     }
@@ -30,7 +48,7 @@ export const fetchGestores = async () => {
 
 export const fetchCreateProfessor = async (professor: ProfessorDataBasica) => {
   try {
-    const response = await fetch("http://localhost:3000/professores", {
+    const response = await fetch("http://localhost:3001/professores", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -49,14 +67,13 @@ export const fetchCreateProfessor = async (professor: ProfessorDataBasica) => {
 
 export const fetchUpdateProfessor = async (professor: ProfessorDataBasica) => {
   try {
-    const response = await fetch(`http://localhost:3000/professores/${professor.professor.id}`, {
+    const response = await fetch(`http://localhost:3001/professores/${professor.professor.id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(professor),
     });
-    if (!response.ok) throw new Error("Erro ao atualizar professor");
 
     const data = await response.json();
     return data;
@@ -68,7 +85,7 @@ export const fetchUpdateProfessor = async (professor: ProfessorDataBasica) => {
 
 export const fetchDeleteProfessor = async (id: number) => {
   try {
-    const response = await fetch(`http://localhost:3000/professores/${id}`, {
+    const response = await fetch(`http://localhost:3001/professores/${id}`, {
       method: "DELETE",
     });
     if (!response.ok) throw new Error("Erro ao deletar professor");
@@ -93,5 +110,5 @@ export interface ProfessorDataBasica {
     nome: string;
     email: string;
   };
-  turmas: TurmaBasica[];
+  turmas: TurmaCompleta[];
 }

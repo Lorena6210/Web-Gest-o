@@ -1,14 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-// /routes/atividadeRoutes.ts
 const express_1 = require("express");
 const atividadeController_1 = require("../controllers/atividadeController");
 const router = (0, express_1.Router)();
-router.get('/', atividadeController_1.obterAtividades);
-router.post('/', (req, res) => {
+router.post('/atividades', (req, res) => {
     (0, atividadeController_1.criarAtividade)(req, res);
 });
-router.put('/:id', atividadeController_1.atualizarAtividade);
-router.post('/:id/responder', atividadeController_1.responderAtividade);
-router.delete('/:id', atividadeController_1.deletarAtividade);
+router.get('/', atividadeController_1.obterAtividades);
+router.put('/atividades/:id', (req, res) => {
+    (0, atividadeController_1.atualizarAtividade)(req, res);
+});
+router.delete('/atividades/:id', (req, res) => {
+    (0, atividadeController_1.deletarAtividade)(req, res);
+});
+router.post('/atividades/:atividadeId/notas', (req, res) => {
+    (0, atividadeController_1.criarNotaAtividade)(req, res);
+});
+router.get('/atividades/:atividadeId/notas', atividadeController_1.obterNotasAtividade);
 exports.default = router;

@@ -1,105 +1,80 @@
-// /controllers/notaController.ts
 import { Request, Response } from 'express';
-import db from '../db';
-import { RowDataPacket } from 'mysql2';
+import pool from '../db';
+import { RowDataPacket, ResultSetHeader } from 'mysql2';
 
-
-export const obterNotasPorAluno = (req: Request, res: Response) => {
+export const obterNotasPorAluno = async (req: Request, res: Response) => {
   const { alunoId } = req.params;
-  db.query('SELECT * FROM notas WHERE alunoId = ?', [alunoId], (err, results) => {
-    if (err) return res.status(500).json({ error: 'Erro ao buscar notas' });
-    res.json(results);
-  });
+
+  const query = `
+    SELECT n.*, a.Titulo AS atividadeTitulo, b.Nome AS bimestreNome, al.Nome AS alunoNome, d.Nome AS disciplinaNome
+    FROM Nota n
+    JOIN Atividade a ON n.Id_Atividade = a.Id
+    JOIN Bimestre b ON a.Id_Bimestre = b.Id
+    JOIN Aluno al ON n.Id_Aluno = al.Id
+    JOIN Disciplina d ON a.Id_Disciplina = d.Id
+    WHERE n.Id_Aluno = ?
+  `;
+
+  try {
+    const [result] = await pool.promise().query<RowDataPacket[]>(query, [alunoId]);
+    res.json(result);
+  } catch (error) {
+    console.error('Erro ao buscar notas por aluno:', error);
+    res.status(500).json({ error: 'Erro ao buscar notas por aluno' });
+  }
 };
 
-export const obterNotasPorDisciplina = (req: Request, res: Response) => {
-  const { disciplinaId } = req.params;
-  db.query('SELECT * FROM notas WHERE disciplinaId = ?', [disciplinaId], (err, results) => {
-    if (err) return res.status(500).json({ error: 'Erro ao buscar notas' });
-    res.json(results);
-  });
+// Similar para obterNotasPorDisciplina, obterNotasPorProfessor, obterNotasPorTurma, obterNotas, obterNotaPorId
+
+export const criarNota = async (req: Request, res: Response) => {
+  const { idAluno, idAtividade, valor } = req.body;
+
+  if (!idAluno || !idAtividade || valor === undefined || valor === null) {
+    return res.status(400).json({ error: 'Campos idAluno, idAtividade e valor são obrigatórios' });
+  }
+
+  try {
+    const sql = 'INSERT INTO Nota (Id_Aluno, Id_Atividade, Valor) VALUES (?, ?, ?)';
+    const [result] = await pool.promise().query<ResultSetHeader>(sql, [idAluno, idAtividade, valor]);
+    res.status(201).json({ message: 'Nota criada com sucesso', insertId: result.insertId });
+  } catch (error) {
+    console.error('Erro ao criar nota:', error);
+    res.status(500).json({ error: 'Erro ao criar nota' });
+  }
 };
 
-export const obterNotasPorProfessor = (req: Request, res: Response) => {
-  const { professorId } = req.params;
-  db.query('SELECT * FROM notas WHERE professorId = ?', [professorId], (err, results) => {
-    if (err) return res.status(500).json({ error: 'Erro ao buscar notas' });
-    res.json(results);
-  });
-};
-
-export const obterNotasPorTurma = (req: Request, res: Response) => {
-  const { turmaId } = req.params;
-  db.query('SELECT * FROM notas WHERE turmaId = ?', [turmaId], (err, results) => {
-    if (err) return res.status(500).json({ error: 'Erro ao buscar notas' });
-    res.json(results);
-  });
-};
-
-export const obterNotas = (req: Request, res: Response) => {
-  db.query('SELECT * FROM notas', (err, results) => {
-    if (err) {
-      console.error('Erro ao buscar notas:', err); // Log do erro
-      return res.status(500).json({ error: 'Erro ao buscar notas' });
-    }
-    console.log('Notas encontradas:', results); // Log dos resultados
-    res.json(results);
-  });
-};
-
-
-export const obterNotaPorId = (req: Request, res: Response) => {
-  const { id } = req.params;
-  db.query('SELECT * FROM notas WHERE id = ?', [id], (err, results) => {
-    if (err) return res.status(500).json({ error: 'Erro ao buscar nota' });
-    res.json(results);
-  });
-};
-
-export const atualizarNota = (req: Request, res: Response) => {
+export const atualizarNota = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { valor } = req.body;
 
-  const selectQuery = 'SELECT valor FROM notas WHERE id = ?';
-  const updateQuery = 'UPDATE notas SET valor = ? WHERE id = ?';
+  if (valor === undefined || valor === null) {
+    return res.status(400).json({ error: 'Campo valor é obrigatório' });
+  }
 
-  db.query(selectQuery, [id], (err, results) => {
-    if (err) return res.status(500).json({ error: 'Erro ao buscar nota' });
-
-    // Cast explícito do resultado para garantir acesso a `length` e `valor`
-    const rows = results as RowDataPacket[];
-
-    if (rows.length === 0) {
+  try {
+    const sql = 'UPDATE Nota SET Valor = ? WHERE Id = ?';
+    const [result] = await pool.promise().query<ResultSetHeader>(sql, [valor, id]);
+    if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Nota não encontrada' });
     }
-
-    const notaAtual = rows[0].valor;
-
-    if (valor < notaAtual) {
-      return res.status(400).json({ error: 'Não é permitido diminuir a nota' });
-    }
-
-    db.query(updateQuery, [valor, id], (err) => {
-      if (err) return res.status(500).json({ error: 'Erro ao atualizar nota' });
-      res.json({ message: 'Nota atualizada com sucesso' });
-    });
-  });
+    res.json({ message: 'Nota atualizada com sucesso' });
+  } catch (error) {
+    console.error('Erro ao atualizar nota:', error);
+    res.status(500).json({ error: 'Erro ao atualizar nota' });
+  }
 };
 
-export const deletarNota = (req: Request, res: Response) => {
+export const deletarNota = async (req: Request, res: Response) => {
   const { id } = req.params;
-  db.query('DELETE FROM notas WHERE id = ?', [id], (err) => {
-    if (err) return res.status(500).json({ error: 'Erro ao deletar nota' });
-    res.json({ message: 'Nota deletada com sucesso' });
-  });
-};
 
-export const criarNota = (req: Request, res: Response) => {
-  const { alunoId, valor, professorId } = req.body;
-  db.query('INSERT INTO notas (alunoId, valor, professorId) VALUES (?, ?, ?)', [alunoId, valor, professorId], (err) => {
-    if (err) {
-      return res.status(500).json({ error: 'Erro ao criar nota' });
+  try {
+    const [result] = await pool.promise().query<ResultSetHeader>('DELETE FROM Nota WHERE Id = ?', [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Nota não encontrada' });
     }
-    res.status(201).json({ message: 'Nota criada com sucesso' });
-  });
+    res.json({ message: 'Nota deletada com sucesso' });
+  } catch (error) {
+    console.error('Erro ao deletar nota:', error);
+    res.status(500).json({ error: 'Erro ao deletar nota' });
+  }
 };

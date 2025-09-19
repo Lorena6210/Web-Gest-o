@@ -1,7 +1,7 @@
 // lib/api.ts
 export const fetchGestores = async (id: number) => {
   try {
-    const response = await fetch(`http://localhost:3000/gestores/${id}`);
+    const response = await fetch(`http://localhost:3001/gestores/${id}`);
     if (!response.ok) {
       throw new Error("Erro na resposta do servidor");
     }

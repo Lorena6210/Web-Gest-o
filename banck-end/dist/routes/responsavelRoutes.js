@@ -5,6 +5,7 @@ const responsavelController_1 = require("../controllers/responsavelController");
 const router = (0, express_1.Router)();
 router.get('/', responsavelController_1.getResponsaveis);
 router.get('/:id', responsavelController_1.getResponsavelById);
+router.get('/:id/alunos', responsavelController_1.getAlunosByResponsavel);
 router.post('/', responsavelController_1.createResponsavel);
 router.put('/:id', responsavelController_1.updateResponsavel);
 router.patch('/ativar/:id', responsavelController_1.activateResponsavel);

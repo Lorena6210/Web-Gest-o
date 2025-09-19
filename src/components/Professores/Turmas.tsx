@@ -59,7 +59,7 @@ export default function Turmas({ usuario, turmas }: Props) {
   return (
  <div style={{  display: 'flex', maxWidth:"100%", width: '100%', height: '90vh', fontFamily: 'Arial, sans-serif',}}>
    <Navbar usuario={usuario} />
-  <main style={{ flex: 1, padding: '30px',}}>
+  <main style={{ position: 'relative', left: '280px', flex: 1, padding: '30px',}}>
    {/* Campo de busca */}
   <div style={{ position: 'relative', marginBottom: '30px',maxWidth: '400px',}}>
    <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." style={{ width: '100%', padding: '10px 40px 10px 15px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '16px',}} />
