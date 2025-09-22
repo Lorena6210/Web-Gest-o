@@ -4,8 +4,7 @@ import {
   criarOuAtualizarNotaProva,
   getNotasPorAlunoDisciplinaBimestre,
   getBoletins,
-  createOrUpdateBoletim,
-  getBoletimPorAluno,
+
 } from '../controllers/boletimController';
 
 const router = express.Router();
@@ -23,7 +22,5 @@ router.get('/notas/:idAluno/:idDisciplina/:idBimestre', (req, res) => {
 
 // Boletins
 router.get('/', getBoletins);
-router.post('/boletins', createOrUpdateBoletim);
-router.get('/boletins/aluno/:idAluno', getBoletimPorAluno);
 
 export default router;

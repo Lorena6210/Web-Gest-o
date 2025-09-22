@@ -16,7 +16,7 @@ interface Props {
     turma: TurmaCompleta;  // agora é um único objeto
     prova: Prova[];
 }
-
+z
 export default function ProfessorProvaPage({ usuario, turma, prova }: Props) {
   return <ProfessorProvaPageComponent usuario={usuario} turma={turma} prova={prova} />;
 }

@@ -1,6 +1,18 @@
 // lib/api.ts
 import { TurmaCompleta } from "@/Types/Turma";
 
+export interface ProfessorDataBasica {
+  professor: {
+    id: number;
+    nome: string;
+    email: string;
+  };
+  id: number;
+  nome: string;
+  email: string;
+  turmas: TurmaCompleta[];
+}
+
 export const fetchProfessores = async () => {
   try {
     const response = await fetch(`http://localhost:3001/professores`);

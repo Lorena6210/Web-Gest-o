@@ -7,16 +7,16 @@ router.post('/atividades', (req, res) => {
   criarAtividade(req, res);
 });
 router.get('/', obterAtividades);
-router.put('/atividades/:id', (req, res) => {
+router.put('/:id', (req, res) => {
   atualizarAtividade(req, res);
 });
-router.delete('/atividades/:id', (req, res) => {
+router.delete('/:id', (req, res) => {
   deletarAtividade(req, res);
 });
 
-router.post('/atividades/:atividadeId/notas', (req, res) => {
+router.post('/:atividadeId/notas', (req, res) => {
   criarNotaAtividade(req, res);
 });
-router.get('/atividades/:atividadeId/notas', obterNotasAtividade);
+router.get('/:atividadeId/notas', obterNotasAtividade);
 
 export default router;

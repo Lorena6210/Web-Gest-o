@@ -1,207 +1,174 @@
-import React, { useEffect, useState, useMemo } from "react";
-import Navbar from "../Navbar";
-import { Box, Button, CircularProgress, Tooltip } from "@mui/material";
-import { fetchGradeCurricular } from "@/lib/gradeCurricular";
-
-interface GradeCurricular {
-  Id_Turma: number;
-  Id_Disciplina: number;
-  Codigo_Disciplina: string;
-  Nome_Disciplina: string;
-  Id_Professor: number;
-  Nome_Professor: string;
-  Semestre: number;
-  Credito?: number;
-  CargaHoraria?: number;  
-  Obrigatoria?: boolean;
-  Descricao?: string;   // ✅ adicionado
-}
-
-interface Usuario {
-  Nome: string;
-  Id: number;
-}
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Typography,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Paper,
+  Button,
+  CircularProgress,
+  Divider,
+} from "@mui/material";
+import {
+  GradeCurricular,
+  Disciplina,
+  fetchGradesCurriculares,
+} from "@/lib/gradeCurricular";
 
 interface Props {
-  usuario: Usuario[];
-  idTurma: number;
-  professorId: number;
-  onAtualizar?: (idDisciplina: number) => void;
-  onExcluir?: (idDisciplina: number) => void;
-  onCadastrarDisciplina?: (semestre: number) => void;
-  onCadastrarGrade?: () => void;
+  usuario?: any;
 }
 
-const TabelaDisciplinas: React.FC<{
-  disciplinas: GradeCurricular[];
-  professorId: number;
-  onAtualizar?: (idDisciplina: number) => void;
-  onExcluir?: (idDisciplina: number) => void;
-}> = ({ disciplinas, professorId, onAtualizar, onExcluir }) => (
-  <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 10 }}>
-    <thead style={{ backgroundColor: "#1976d2", color: "white" }}>
-      <tr>
-        <th style={{ padding: 8, textAlign: "center" }}>Código</th>
-        <th style={{ padding: 8 }}>Disciplina</th>
-        <th style={{ padding: 8, textAlign: "center" }}>Crédito</th>
-        <th style={{ padding: 8, textAlign: "center" }}>Carga Horária</th> {/* ✅ nova */}
-        <th style={{ padding: 8 }}>Descrição</th> {/* ✅ nova */}
-        <th style={{ padding: 8, textAlign: "center" }}>Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      {disciplinas.map((grade) => (
-        <tr key={grade.Id_Disciplina} style={{ borderBottom: "1px solid #ddd" }}>
-          <td style={{ padding: 8, textAlign: "center" }}>{grade.Codigo_Disciplina}</td>
-          <td style={{ padding: 8 }}>{grade.Nome_Disciplina}</td>
-          <td style={{ padding: 8, textAlign: "center" }}>{grade.Credito ?? "-"}</td>
-          <td style={{ padding: 8, textAlign: "center" }}>{grade.CargaHoraria ?? "-"}</td>
-          <td style={{ padding: 8 }}>
-            {grade.Descricao ? (
-              <Tooltip title={grade.Descricao} arrow>
-                <span>
-                  {grade.Descricao.length > 40
-                    ? grade.Descricao.substring(0, 40) + "..."
-                    : grade.Descricao}
-                </span>
-              </Tooltip>
-            ) : (
-              "—"
-            )}
-          </td>
-          <td style={{ padding: 8, textAlign: "center" }}>
-            <Button
-              variant="text"
-              color="primary"
-              size="small"
-              disabled={grade.Id_Professor !== professorId}
-              onClick={() => onAtualizar && onAtualizar(grade.Id_Disciplina)}
-            >
-              Atualizar
-            </Button>
-            <Button
-              variant="text"
-              color="error"
-              size="small"
-              disabled={grade.Id_Professor !== professorId}
-              onClick={() => onExcluir && onExcluir(grade.Id_Disciplina)}
-            >
-              Excluir
-            </Button>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-);
-
-export default function ProfessorGradeCurricular({
-  usuario,
-  idTurma,
-  professorId,
-  onAtualizar,
-  onExcluir,
-  onCadastrarDisciplina,
-  onCadastrarGrade,
-}: Props) {
-  const [gradeCurricular, setGradeCurricular] = useState<GradeCurricular[]>([]);
+export default function ProfessorGradeCurricular({ usuario }: Props) {
+  const [grades, setGrades] = useState<GradeCurricular[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const carregarGrade = async () => {
+    const carregar = async () => {
       try {
-        setLoading(true);
-        setError(null);
-        const data = await fetchGradeCurricular(idTurma, professorId);
-        setGradeCurricular(data);
-      } catch (err) {
-        console.error(err);
-        setError("Erro ao carregar a grade curricular.");
+        const data = await fetchGradesCurriculares();
+        // Adicionar Disciplinas vazias se não existir
+        setGrades(data.map(g => ({ ...g, Disciplinas: g.Disciplinas || [] })));
+      } catch (error) {
+        console.error(error);
       } finally {
         setLoading(false);
       }
     };
+    carregar();
+  }, []);
 
-    carregarGrade();
-  }, [idTurma, professorId]);
+  const handleAtualizarDisciplina = (gradeId: number, disciplina: Disciplina) => {
+    const novoNome = prompt("Novo nome da disciplina:", disciplina.Nome);
+    if (novoNome) {
+      setGrades(prev =>
+        prev.map(g =>
+          g.Id === gradeId
+            ? {
+                ...g,
+                Disciplinas: g.Disciplinas!.map(d =>
+                  d.Codigo === disciplina.Codigo ? { ...d, Nome: novoNome } : d
+                ),
+              }
+            : g
+        )
+      );
+      console.log(`Atualizada disciplina ${disciplina.Codigo} para ${novoNome}`);
+    }
+  };
 
-  const semestres = useMemo(() => {
-    return Array.from(new Set(gradeCurricular.map((g) => g.Semestre))).sort((a, b) => a - b);
-  }, [gradeCurricular]);
+  const handleDeletarDisciplina = (gradeId: number, codigo: string) => {
+    if (confirm("Deseja realmente deletar esta disciplina?")) {
+      setGrades(prev =>
+        prev.map(g =>
+          g.Id === gradeId
+            ? {
+                ...g,
+                Disciplinas: g.Disciplinas!.filter(d => d.Codigo !== codigo),
+              }
+            : g
+        )
+      );
+      console.log(`Deletada disciplina ${codigo}`);
+    }
+  };
 
-  if (loading) {
-    return (
-      <Box p={3} textAlign="center">
-        <CircularProgress />
-        <p>Carregando grade curricular...</p>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box p={3} textAlign="center" color="red">
-        <p>{error}</p>
-      </Box>
-    );
-  }
+  if (loading) return <Box textAlign="center" mt={4}><CircularProgress /></Box>;
 
   return (
     <Box p={3}>
-      <Navbar usuario={usuario} />
+      <Typography variant="h5" gutterBottom>
+        Grades Curriculares
+      </Typography>
 
-      <Box
-        sx={{
-          maxWidth: 800,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-          margin: "0 auto",
-        }}
-      >
-        <h2>Grade Curricular</h2>
-        <Button variant="contained" color="primary" onClick={() => onCadastrarGrade && onCadastrarGrade()}>
-          Cadastrar Grade
-        </Button>
-      </Box>
+      {grades.map(grade => (
+        <Paper key={`${grade.Id}-${grade.Id_Turma}`} sx={{ mb: 4, p: 2 }}>
+          {grade.Nome_Turma && (
+            <Typography variant="subtitle1" color="text.secondary">
+              Turma: {grade.Nome_Turma}
+            </Typography>
+          )}
 
-      {semestres.map((semestre) => {
-        const disciplinasDoSemestre = gradeCurricular.filter((g) => g.Semestre === semestre);
-        return (
-          <Box key={semestre} sx={{ mb: 4, maxWidth: 800, margin: "0 auto" }}>
-            <h3
-              style={{
-                backgroundColor: "#1976d2",
-                color: "white",
-                padding: "8px",
-                borderRadius: "4px",
-                userSelect: "none",
-              }}
-            >
-              {semestre}º Semestre
-            </h3>
+          <Divider sx={{ my: 2 }} />
 
-            <TabelaDisciplinas
-              disciplinas={disciplinasDoSemestre}
-              professorId={professorId}
-              onAtualizar={onAtualizar}
-              onExcluir={onExcluir}
-            />
+          {[1, 2].map(semestre => (
+            <Box key={semestre} sx={{ mt: 2 }}>
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                {semestre}º Semestre
+              </Typography>
 
-            <Box mt={2} textAlign="right">
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={() => onCadastrarDisciplina && onCadastrarDisciplina(semestre)}
-              >
-                Cadastrar Disciplina
-              </Button>
+              {[1, 2].map(bimestre => (
+                <Box key={bimestre} sx={{ ml: 2, mb: 2 }}>
+                  <Typography variant="body1" fontWeight="bold" sx={{ mb: 1 }}>
+                    {bimestre}º Bimestre
+                  </Typography>
+
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Código</TableCell>
+                        <TableCell>Disciplina</TableCell>
+                        <TableCell>Carga Horária</TableCell>
+                        <TableCell>Descrição</TableCell>
+                        <TableCell>Ações</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {grade.Disciplinas!
+                        .filter(d => d.Semestre === semestre && d.Bimestre === bimestre)
+                        .map(disciplina => (
+                          <TableRow key={disciplina.Codigo}>
+                            <TableCell>{disciplina.Codigo}</TableCell>
+                            <TableCell>{disciplina.Nome}</TableCell>
+                            <TableCell>{disciplina.CargaHoraria}</TableCell>
+                            <TableCell>{disciplina.Descricao}</TableCell>
+                            <TableCell>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="primary"
+                                sx={{ mr: 1 }}
+                                onClick={() =>
+                                  handleAtualizarDisciplina(grade.Id, disciplina)
+                                }
+                              >
+                                Atualizar
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="error"
+                                onClick={() =>
+                                  handleDeletarDisciplina(grade.Id, disciplina.Codigo)
+                                }
+                              >
+                                Deletar
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                    onClick={() =>
+                      alert(`Cadastrar disciplina no ${bimestre}º bimestre`)
+                    }
+                  >
+                    Cadastrar Disciplina
+                  </Button>
+                </Box>
+              ))}
             </Box>
-          </Box>
-        );
-      })}
+          ))}
+        </Paper>
+      ))}
     </Box>
   );
 }

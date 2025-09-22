@@ -2,7 +2,7 @@ import { GetServerSideProps } from "next";
 import ProfessorBoletim from "@/components/Professores/boletim";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmasDoProfessor } from '@/lib/TurmaApi';
-import { fetchGetBoletim, Boletim } from '@/lib/BoletimApi'
+import { fetchGetBoletins, Boletim } from '@/lib/BoletimApi'
 import { fetchDisciplinas } from "@/lib/disciplinaApi";
 import { fetchAlunos } from "@/lib/AlunoApi";
 import { TurmaCompleta } from '@/Types/Turma';
@@ -45,7 +45,7 @@ return {
   props: { 
     usuario, 
     turma: turmas[0], 
-    boletim: await fetchGetBoletim(),
+    boletim: await fetchGetBoletins(),
     Disciplina: await fetchDisciplinas(),
     Aluno: await fetchAlunos()
   },

@@ -18,6 +18,4 @@ router.get('/notas/:idAluno/:idDisciplina/:idBimestre', (req, res) => {
 });
 // Boletins
 router.get('/', boletimController_1.getBoletins);
-router.post('/boletins', boletimController_1.createOrUpdateBoletim);
-router.get('/boletins/aluno/:idAluno', boletimController_1.getBoletimPorAluno);
 exports.default = router;

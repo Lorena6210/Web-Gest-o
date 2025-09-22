@@ -1,24 +1,43 @@
-import { Router, Request, Response } from 'express';
-import { listarDisciplinasPorTurmaEProfessor, criarGradeCurricular, removerDisciplinaDaGrade, atualizarGradeCurricular, deletarGradeCurricular, listarDisciplinasDaGrade } from '../controllers/GradeCurricularController';
+import { Router } from 'express';
+import {
+  criarDisciplinaNaGradeComBimestre,
+  listarGradesCurriculares,
+  atualizarGradeCurricular,
+  deletarGradeCurricular,
+  listarGradeComDisciplinas,
+  listarProfessoresPorGradeEDisciplina
+} from '../controllers/GradeCurricularController';
 
 const router = Router();
 
-router.get('/disciplinas/:idTurma/:idProfessor', (req: Request, res: Response) => {
-    listarDisciplinasPorTurmaEProfessor(req, res);
+// Listar professores de uma disciplina específica em uma grade
+router.get('/:idGradeCurricular/disciplinas/:idDisciplina/professores', (req, res) => {
+  listarProfessoresPorGradeEDisciplina(req, res);
 });
 
-router.get('/:id/disciplinas', listarDisciplinasDaGrade);
-router.post('/', (req: Request, res: Response) => {
-    criarGradeCurricular(req, res);
+// Criar nova grade curricular
+router.post('/', (req, res) => {
+  criarDisciplinaNaGradeComBimestre(req, res);
 });
+
+// Listar todas as grades curriculares
+router.get('/', (req, res) => {
+  listarGradesCurriculares(req, res);
+});
+
+// Atualizar uma grade curricular
 router.put('/:id', (req, res) => {
-    atualizarGradeCurricular(req, res);
+  atualizarGradeCurricular(req, res);
 });
+
+// Deletar uma grade curricular
 router.delete('/:id', (req, res) => {
-    deletarGradeCurricular(req, res);
+  deletarGradeCurricular(req, res);
 });
-router.delete('/:id/disciplina/:disciplinaId', (req, res) => {
-    removerDisciplinaDaGrade(req, res);
+
+// Listar disciplinas de uma grade (query param opcional "bimestre")
+router.get('/:id/disciplinas', (req, res) => {
+  listarGradeComDisciplinas(req, res);
 });
 
 export default router;

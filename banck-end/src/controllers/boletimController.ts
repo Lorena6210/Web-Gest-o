@@ -12,7 +12,7 @@ interface Boletim {
   Frequencia?: number | null;
 }
 
-// Função para calcular médias somando todas as notas e dividindo pela quantidade total
+// Função para calcular médias somando todas as notas e dividindo pela quantidade total (por bimestre)
 async function calcularMedias(idAluno: number, idDisciplina: number, idBimestre: number) {
   const [somaAtividadesRows] = await pool.promise().query<RowDataPacket[]>(`
     SELECT IFNULL(SUM(n.Valor), 0) AS soma, COUNT(n.Valor) AS quantidade
@@ -42,7 +42,7 @@ async function calcularMedias(idAluno: number, idDisciplina: number, idBimestre:
   return { mediaFinal };
 }
 
-// Função para calcular frequência de faltas
+// Função para calcular frequência de faltas (por bimestre)
 async function calcularFrequencia(idAluno: number, idDisciplina: number, idBimestre: number) {
   const [rows] = await pool.promise().query<RowDataPacket[]>(`
     SELECT COUNT(*) AS QtdeFaltas
@@ -55,8 +55,8 @@ async function calcularFrequencia(idAluno: number, idDisciplina: number, idBimes
   return { frequencia };
 }
 
-// Função ÚNICA para atualizar boletim
-async function atualizarBoletim(idAluno: number, idDisciplina: number, idBimestre: number) {
+// Função ÚNICA para atualizar boletim (por bimestre, com observações opcionais)
+async function atualizarBoletim(idAluno: number, idDisciplina: number, idBimestre: number, observacoes?: string) {
   const { mediaFinal } = await calcularMedias(idAluno, idDisciplina, idBimestre);
   const { frequencia } = await calcularFrequencia(idAluno, idDisciplina, idBimestre);
 
@@ -66,12 +66,13 @@ async function atualizarBoletim(idAluno: number, idDisciplina: number, idBimestr
   else situacaoFinal = 'Reprovado';
 
   const sql = `
-    INSERT INTO Boletim (Id_Aluno, Id_Disciplina, Id_Bimestre, MediaFinal, Situacao, Frequencia)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO Boletim (Id_Aluno, Id_Disciplina, Id_Bimestre, MediaFinal, Situacao, Frequencia, Observacoes)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
       MediaFinal = VALUES(MediaFinal),
       Situacao = VALUES(Situacao),
-      Frequencia = VALUES(Frequencia)
+      Frequencia = VALUES(Frequencia),
+      Observacoes = VALUES(Observacoes)
   `;
 
   await pool.promise().query<ResultSetHeader>(sql, [
@@ -80,14 +81,14 @@ async function atualizarBoletim(idAluno: number, idDisciplina: number, idBimestr
     idBimestre,
     mediaFinal,
     situacaoFinal,
-    frequencia
+    frequencia,
+    observacoes || null
   ]);
 }
 
 export { atualizarBoletim };
 
-
-// Criar ou atualizar nota de Atividade
+// POST - Criar ou atualizar nota de Atividade (com bimestre obrigatório)
 export const criarOuAtualizarNotaAtividade = async (req: Request, res: Response) => {
   const { Id_Aluno, Id_Turma, Id_Bimestre, Id_Atividade, Valor } = req.body;
 
@@ -96,46 +97,46 @@ export const criarOuAtualizarNotaAtividade = async (req: Request, res: Response)
   }
 
   try {
-    // Verificar se já existe nota para esse aluno e atividade
+    // Verificar se já existe nota para esse aluno e atividade (por bimestre implícito via Nota)
     const [rows] = await pool.promise().query<RowDataPacket[]>(`
-      SELECT Id FROM Nota WHERE Id_Aluno = ? AND Id_Atividade = ?
-    `, [Id_Aluno, Id_Atividade]);
+      SELECT Id FROM Nota WHERE Id_Aluno = ? AND Id_Atividade = ? AND Id_Bimestre = ?
+    `, [Id_Aluno, Id_Atividade, Id_Bimestre]);
 
     if (rows.length > 0) {
       // Atualizar nota existente
-      await pool.promise().query(`
+      await pool.promise().query<ResultSetHeader>(`
         UPDATE Nota SET Valor = ? WHERE Id = ?
       `, [Valor, rows[0].Id]);
     } else {
-      // Inserir nova nota
-      await pool.promise().query(`
+      // Inserir nova nota (com bimestre)
+      await pool.promise().query<ResultSetHeader>(`
         INSERT INTO Nota (Id_Aluno, Id_Turma, Id_Bimestre, Id_Atividade, Valor)
         VALUES (?, ?, ?, ?, ?)
       `, [Id_Aluno, Id_Turma, Id_Bimestre, Id_Atividade, Valor]);
     }
 
-    // Atualizar boletim
-    // Para pegar Id_Disciplina do Atividade:
+    // Pegar Id_Disciplina da Atividade (com verificação de bimestre)
     const [atividadeRows] = await pool.promise().query<RowDataPacket[]>(`
-      SELECT Id_Disciplina FROM Atividade WHERE Id = ?
-    `, [Id_Atividade]);
+      SELECT Id_Disciplina FROM Atividade WHERE Id = ? AND Id_Bimestre = ?
+    `, [Id_Atividade, Id_Bimestre]);
 
     if (atividadeRows.length === 0) {
-      return res.status(400).json({ error: 'Atividade não encontrada' });
+      return res.status(400).json({ error: 'Atividade não encontrada para o bimestre informado' });
     }
 
     const idDisciplina = atividadeRows[0].Id_Disciplina;
 
+    // Atualizar boletim (por bimestre)
     await atualizarBoletim(Id_Aluno, idDisciplina, Id_Bimestre);
 
-    res.json({ message: 'Nota de atividade criada/atualizada com sucesso' });
+    res.json({ message: 'Nota de atividade criada/atualizada com sucesso (boletim atualizado por bimestre)' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro ao criar/atualizar nota de atividade' });
   }
 };
 
-// Criar ou atualizar nota de Prova
+// POST - Criar ou atualizar nota de Prova (com bimestre obrigatório)
 export const criarOuAtualizarNotaProva = async (req: Request, res: Response) => {
   const { Id_Aluno, Id_Turma, Id_Bimestre, Id_Prova, Valor } = req.body;
 
@@ -144,45 +145,46 @@ export const criarOuAtualizarNotaProva = async (req: Request, res: Response) => 
   }
 
   try {
-    // Verificar se já existe nota para esse aluno e prova
+    // Verificar se já existe nota para esse aluno e prova (por bimestre)
     const [rows] = await pool.promise().query<RowDataPacket[]>(`
-      SELECT Id FROM Nota WHERE Id_Aluno = ? AND Id_Prova = ?
-    `, [Id_Aluno, Id_Prova]);
+      SELECT Id FROM Nota WHERE Id_Aluno = ? AND Id_Prova = ? AND Id_Bimestre = ?
+    `, [Id_Aluno, Id_Prova, Id_Bimestre]);
 
     if (rows.length > 0) {
       // Atualizar nota existente
-      await pool.promise().query(`
+      await pool.promise().query<ResultSetHeader>(`
         UPDATE Nota SET Valor = ? WHERE Id = ?
       `, [Valor, rows[0].Id]);
     } else {
-      // Inserir nova nota
-      await pool.promise().query(`
+      // Inserir nova nota (com bimestre)
+      await pool.promise().query<ResultSetHeader>(`
         INSERT INTO Nota (Id_Aluno, Id_Turma, Id_Bimestre, Id_Prova, Valor)
         VALUES (?, ?, ?, ?, ?)
       `, [Id_Aluno, Id_Turma, Id_Bimestre, Id_Prova, Valor]);
     }
 
-    // Atualizar boletim
-    // Para pegar Id_Disciplina do Prova:
+    // Pegar Id_Disciplina da Prova (com verificação de bimestre)
     const [provaRows] = await pool.promise().query<RowDataPacket[]>(`
-      SELECT Id_Disciplina FROM Prova WHERE Id = ?
-    `, [Id_Prova]);
+      SELECT Id_Disciplina FROM Prova WHERE Id = ? AND Id_Bimestre = ?
+    `, [Id_Prova, Id_Bimestre]);
 
     if (provaRows.length === 0) {
-      return res.status(400).json({ error: 'Prova não encontrada' });
+      return res.status(400).json({ error: 'Prova não encontrada para o bimestre informado' });
     }
 
     const idDisciplina = provaRows[0].Id_Disciplina;
 
+    // Atualizar boletim (por bimestre)
     await atualizarBoletim(Id_Aluno, idDisciplina, Id_Bimestre);
 
-    res.json({ message: 'Nota de prova criada/atualizada com sucesso' });
+    res.json({ message: 'Nota de prova criada/atualizada com sucesso (boletim atualizado por bimestre)' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro ao criar/atualizar nota de prova' });
   }
 };
 
+// GET - Notas por aluno, disciplina e bimestre (detalhado)
 export const getNotasPorAlunoDisciplinaBimestre = async (req: Request, res: Response) => {
   const { idAluno, idDisciplina, idBimestre } = req.params;
 
@@ -191,35 +193,38 @@ export const getNotasPorAlunoDisciplinaBimestre = async (req: Request, res: Resp
   }
 
   try {
-    // Notas Atividades
+    // Notas de Atividades (filtrado por bimestre)
     const sqlAtividades = `
       SELECT n.Id, n.Valor, a.Titulo, a.DataEntrega
       FROM Nota n
       JOIN Atividade a ON n.Id_Atividade = a.Id
       WHERE n.Id_Aluno = ? AND a.Id_Disciplina = ? AND a.Id_Bimestre = ?
+      ORDER BY a.DataEntrega
     `;
     const [notasAtividades] = await pool.promise().query<RowDataPacket[]>(sqlAtividades, [idAluno, idDisciplina, idBimestre]);
 
-    // Notas Provas
+    // Notas de Provas (filtrado por bimestre)
     const sqlProvas = `
       SELECT n.Id, n.Valor, p.Titulo, p.DataEntrega
       FROM Nota n
       JOIN Prova p ON n.Id_Prova = p.Id
       WHERE n.Id_Aluno = ? AND p.Id_Disciplina = ? AND p.Id_Bimestre = ?
+      ORDER BY p.DataEntrega
     `;
     const [notasProvas] = await pool.promise().query<RowDataPacket[]>(sqlProvas, [idAluno, idDisciplina, idBimestre]);
 
     res.json({
+      idBimestre: Number(idBimestre), // Retorna o bimestre usado
       notasAtividades,
       notasProvas
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Erro ao buscar notas detalhadas' });
+    res.status(500).json({ error: 'Erro ao buscar notas detalhadas por bimestre' });
   }
 };
 
-// GET - Todos os boletins com média final simples calculada + frequência
+// GET - Todos os boletins (com cálculos por bimestre)
 export const getBoletins = async (_req: Request, res: Response): Promise<void> => {
   try {
     const sql = `
@@ -230,7 +235,7 @@ export const getBoletins = async (_req: Request, res: Response): Promise<void> =
         b.Situacao,
         b.Observacoes,
         b.Frequencia,
-        -- Média simples das notas de Atividades
+        -- Média simples das notas de Atividades (por bimestre)
         IFNULL((
           SELECT AVG(n.Valor)
           FROM Nota n
@@ -239,7 +244,7 @@ export const getBoletins = async (_req: Request, res: Response): Promise<void> =
             AND a.Id_Disciplina = b.Id_Disciplina
             AND a.Id_Bimestre = b.Id_Bimestre
         ), 0) AS MediaAtividades,
-        -- Média simples das notas de Provas
+        -- Média simples das notas de Provas (por bimestre)
         IFNULL((
           SELECT AVG(n.Valor)
           FROM Nota n
@@ -248,133 +253,56 @@ export const getBoletins = async (_req: Request, res: Response): Promise<void> =
             AND p.Id_Disciplina = b.Id_Disciplina
             AND p.Id_Bimestre = b.Id_Bimestre
         ), 0) AS MediaProvas,
-        -- Média final simples (média aritmética das duas médias)
+        -- Média final ponderada (70% Provas, 30% Atividades)
         ROUND(
-          (
-            IFNULL((
-              SELECT AVG(n.Valor)
-              FROM Nota n
-              JOIN Atividade a ON n.Id_Atividade = a.Id
-              WHERE n.Id_Aluno = b.Id_Aluno
-                AND a.Id_Disciplina = b.Id_Disciplina
-                AND a.Id_Bimestre = b.Id_Bimestre
-            ), 0)
-            +
-            IFNULL((
-              SELECT AVG(n.Valor)
-              FROM Nota n
-              JOIN Prova p ON n.Id_Prova = p.Id
-              WHERE n.Id_Aluno = b.Id_Aluno
-                AND p.Id_Disciplina = b.Id_Disciplina
-                AND p.Id_Bimestre = b.Id_Bimestre
-            ), 0)
-          ) / 2, 2
-        ) AS MediaFinalCalculada
+          IFNULL((
+            SELECT AVG(n.Valor)
+            FROM Nota n
+            JOIN Atividade a ON n.Id_Atividade = a.Id
+            WHERE n.Id_Aluno = b.Id_Aluno
+              AND a.Id_Disciplina = b.Id_Disciplina
+              AND a.Id_Bimestre = b.Id_Bimestre
+          ), 0) * 0.3 +
+          IFNULL((
+            SELECT AVG(n.Valor)
+            FROM Nota n
+            JOIN Prova p ON n.Id_Prova = p.Id
+            WHERE n.Id_Aluno = b.Id_Aluno
+              AND p.Id_Disciplina = b.Id_Disciplina
+              AND p.Id_Bimestre = b.Id_Bimestre
+          ), 0) * 0.7,
+          2
+        ) AS MediaFinal
       FROM Boletim b
-      ORDER BY b.Id_Aluno, b.Id_Bimestre, b.Id_Disciplina
+      ORDER BY b.Id_Aluno, b.Id_Disciplina, b.Id_Bimestre
     `;
-
-    const [rows] = await pool.promise().query<RowDataPacket[]>(sql);
-
-    res.json(rows);
+    const [results] = await pool.promise().query<RowDataPacket[]>(sql);
+    res.json(results);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Erro ao buscar boletins' });
   }
 };
 
+// GET - Boletim específico por aluno e disciplina (com cálculos por bimestre)
+export const getBoletimPorAlunoEDisciplina = async (req: Request, res: Response): Promise<void> => {
+  const { idAluno, idDisciplina } = req.params;
 
-// POST - Criar ou atualizar boletim com média final simples calculada
-export const createOrUpdateBoletim = async (req: Request, res: Response): Promise<void> => {
-  const {
-    Id_Aluno,
-    Id_Disciplina,
-    Id_Bimestre,
-    Situacao = null,
-    Observacoes = null
-  } = req.body as Boletim;
-
-  if (!Id_Aluno || !Id_Disciplina || !Id_Bimestre) {
-    res.status(400).json({ error: 'Id_Aluno, Id_Disciplina e Id_Bimestre são obrigatórios' });
+  if (!idAluno || !idDisciplina) {
+    res.status(400).json({ error: 'Parâmetros idAluno e idDisciplina são obrigatórios' });
     return;
   }
-
-  try {
-    // Média das notas de Atividades
-    const [mediaAtividadesRows] = await pool.promise().query<RowDataPacket[]>(`
-      SELECT AVG(n.Valor) AS MediaAtividades
-      FROM Nota n
-      JOIN Atividade a ON n.Id_Atividade = a.Id
-      WHERE n.Id_Aluno = ? AND a.Id_Disciplina = ? AND a.Id_Bimestre = ?
-    `, [Id_Aluno, Id_Disciplina, Id_Bimestre]);
-
-    // Média das notas de Provas
-    const [mediaProvasRows] = await pool.promise().query<RowDataPacket[]>(`
-      SELECT AVG(n.Valor) AS MediaProvas
-      FROM Nota n
-      JOIN Prova p ON n.Id_Prova = p.Id
-      WHERE n.Id_Aluno = ? AND p.Id_Disciplina = ? AND p.Id_Bimestre = ?
-    `, [Id_Aluno, Id_Disciplina, Id_Bimestre]);
-
-    const mediaAtividades = mediaAtividadesRows[0]?.MediaAtividades ?? 0;
-    const mediaProvas = mediaProvasRows[0]?.MediaProvas ?? 0;
-
-    // Média final simples (média aritmética)
-    const MediaFinal = Number(((mediaAtividades + mediaProvas) / 2).toFixed(2));
-
-    // Definir situação se não fornecida
-    let situacaoFinal = Situacao;
-    if (!Situacao) {
-      if (MediaFinal >= 7) situacaoFinal = 'Aprovado';
-      else if (MediaFinal >= 5) situacaoFinal = 'Recuperacao';
-      else situacaoFinal = 'Reprovado';
-    }
-
-    const sql = `
-      INSERT INTO Boletim (Id_Aluno, Id_Disciplina, Id_Bimestre, MediaFinal, Situacao, Observacoes)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        MediaFinal = VALUES(MediaFinal),
-        Situacao = VALUES(Situacao),
-        Observacoes = VALUES(Observacoes)
-    `;
-
-    const [result] = await pool.promise().query<ResultSetHeader>(sql, [
-      Id_Aluno,
-      Id_Disciplina,
-      Id_Bimestre,
-      MediaFinal,
-      situacaoFinal,
-      Observacoes
-    ]);
-
-    res.status(201).json({
-      message: 'Boletim inserido/atualizado com sucesso',
-      MediaFinal,
-      Situacao: situacaoFinal,
-      insertId: result.insertId
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao inserir boletim' });
-  }
-};
-
-// GET - Boletim por aluno com média final simples calculada
-export const getBoletimPorAluno = async (req: Request, res: Response): Promise<void> => {
-  const { idAluno } = req.params;
-
-  if (!idAluno) {
-    res.status(400).json({ error: 'Parâmetro idAluno é obrigatório' });
-    return;
-  }
-
+  
   try {
     const sql = `
       SELECT
         b.Id_Aluno,
         b.Id_Disciplina,
         b.Id_Bimestre,
+        b.Situacao,
+        b.Observacoes,
+        b.Frequencia,
+        -- Média simples das notas de Atividades (por bimestre)
         IFNULL((
           SELECT AVG(n.Valor)
           FROM Nota n
@@ -383,6 +311,7 @@ export const getBoletimPorAluno = async (req: Request, res: Response): Promise<v
             AND a.Id_Disciplina = b.Id_Disciplina
             AND a.Id_Bimestre = b.Id_Bimestre
         ), 0) AS MediaAtividades,
+        -- Média simples das notas de Provas (por bimestre)
         IFNULL((
           SELECT AVG(n.Valor)
           FROM Nota n
@@ -391,39 +320,34 @@ export const getBoletimPorAluno = async (req: Request, res: Response): Promise<v
             AND p.Id_Disciplina = b.Id_Disciplina
             AND p.Id_Bimestre = b.Id_Bimestre
         ), 0) AS MediaProvas,
+        -- Média final ponderada (70% Provas, 30% Atividades)
         ROUND(
-          (
-            IFNULL((
-              SELECT AVG(n.Valor)
-              FROM Nota n
-              JOIN Atividade a ON n.Id_Atividade = a.Id
-              WHERE n.Id_Aluno = b.Id_Aluno
-                AND a.Id_Disciplina = b.Id_Disciplina
-                AND a.Id_Bimestre = b.Id_Bimestre
-            ), 0)
-            +
-            IFNULL((
-              SELECT AVG(n.Valor)
-              FROM Nota n
-              JOIN Prova p ON n.Id_Prova = p.Id
-              WHERE n.Id_Aluno = b.Id_Aluno
-                AND p.Id_Disciplina = b.Id_Disciplina
-                AND p.Id_Bimestre = b.Id_Bimestre
-            ), 0)
-          ) / 2, 2
-        ) AS MediaFinalCalculada,
-        b.Situacao,
-        b.Observacoes
+          IFNULL((
+            SELECT AVG(n.Valor)
+            FROM Nota n
+            JOIN Atividade a ON n.Id_Atividade = a.Id
+            WHERE n.Id_Aluno = b.Id_Aluno
+              AND a.Id_Disciplina = b.Id_Disciplina
+              AND a.Id_Bimestre = b.Id_Bimestre
+          ), 0) * 0.3 +
+          IFNULL((
+            SELECT AVG(n.Valor)
+            FROM Nota n
+            JOIN Prova p ON n.Id_Prova = p.Id
+            WHERE n.Id_Aluno = b.Id_Aluno
+              AND p.Id_Disciplina = b.Id_Disciplina
+              AND p.Id_Bimestre = b.Id_Bimestre
+          ), 0) * 0.7,
+          2
+        ) AS MediaFinal
       FROM Boletim b
-      WHERE b.Id_Aluno = ?
-      ORDER BY b.Id_Bimestre, b.Id_Disciplina
+      WHERE b.Id_Aluno = ? AND b.Id_Disciplina = ?
+      ORDER BY b.Id_Bimestre
     `;
-
-    const [rows] = await pool.promise().query<RowDataPacket[]>(sql, [idAluno]);
-
-    res.json(rows);
+    const [results] = await pool.promise().query<RowDataPacket[]>(sql, [idAluno, idDisciplina]);
+    res.json(results);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Erro ao buscar boletim do aluno' });
+    res.status(500).json({ error: 'Erro ao buscar boletim por aluno e disciplina' });
   }
-};
+}

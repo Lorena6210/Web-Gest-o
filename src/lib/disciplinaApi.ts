@@ -22,3 +22,4 @@ export const fetchDisciplinas = async (): Promise<Disciplina[]> => {
     throw error;
   }
 };
+
