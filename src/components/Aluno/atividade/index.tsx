@@ -1,59 +1,77 @@
-// components/Alunos/AlunoPageContainer.tsx
+// components/Atividade/AtividadePage.tsx
+
 import React from "react";
-import { TurmaCompleta } from '@/Types/Turma';
+import { TurmaCompleta } from "@/Types/Turma";
 
 interface Usuario {
   Nome: string;
   Id: number;
-  Tipo: string;
+  Tipo: string; // 'aluno' ou 'professor'
 }
 
-interface Atividade {
+interface AtividadeDetalhada {
   id: number;
   titulo: string;
-  turmaId: number;
+  descricao: string;
+  dataCriacao: string;
+  dataEntrega: string;
+  dataFinalizacao?: string;
+  professor: string;
+  turma: string;
+  disciplina: string;
 }
 
 interface Props {
   usuario: Usuario;
   turmas: TurmaCompleta[];
-  atividades: Atividade[];
+  atividades: AtividadeDetalhada[];
 }
 
-const AlunoPageContainer: React.FC<Props> = ({ usuario, turmas, atividades }) => {
+const AtividadePage: React.FC<Props> = ({ usuario, turmas, atividades }) => {
+  const isAluno = usuario.Tipo === "aluno";
+
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>Olá, {usuario.Nome}</h1>
+    <div>
+      <h1>Atividades</h1>
 
-      <section>
-        <h2>Suas Turmas</h2>
-        {turmas.length > 0 ? (
-          <ul>
-            {turmas.map((turma) => (
-              <li key={turma.id}>{turma.nome}</li>
-            ))}
-          </ul>
-        ) : (
-          <p>Você não está matriculado em nenhuma turma.</p>
-        )}
-      </section>
+      {atividades.length === 0 && (
+        <p>Não há atividades disponíveis.</p>
+      )}
 
-      <section>
-        <h2>Atividades</h2>
-        {atividades.length > 0 ? (
-          <ul>
-            {atividades.map((atividade) => (
-              <li key={atividade.id}>
-                {atividade.titulo} (Turma: {atividade.turmaId})
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Não há atividades disponíveis.</p>
-        )}
-      </section>
+      {atividades.map((atividade) => (
+        <div
+          key={atividade.id}
+          style={{
+            border: "1px solid #ccc",
+            borderRadius: "8px",
+            padding: "16px",
+            marginBottom: "12px",
+            backgroundColor: "#f9f9f9",
+          }}
+        >
+          <h2>{atividade.titulo}</h2>
+          <p><strong>Descrição:</strong> {atividade.descricao}</p>
+          <p><strong>Disciplina:</strong> {atividade.disciplina}</p>
+          <p><strong>Professor:</strong> {atividade.professor}</p>
+          <p><strong>Turma:</strong> {atividade.turma}</p>
+          <p><strong>Data de Entrega:</strong> {atividade.dataEntrega}</p>
+
+          {/* Botões só visíveis para professores */}
+          {!isAluno && (
+            <div style={{ marginTop: "12px" }}>
+              <button style={{ marginRight: "8px" }}>Editar</button>
+              <button>Excluir</button>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Botão de adicionar atividade - apenas para professores */}
+      {!isAluno && (
+        <button style={{ marginTop: "20px" }}>Adicionar Nova Atividade</button>
+      )}
     </div>
   );
 };
 
-export default AlunoPageContainer;
+export default AtividadePage;

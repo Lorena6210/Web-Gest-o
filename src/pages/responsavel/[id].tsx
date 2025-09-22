@@ -1,7 +1,8 @@
 // pages/responsavel/[id].tsx
+
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
-import { fetchTurmaCompleta, TurmaCompleta } from "@/lib/TurmaApi"
+import { fetchTurmaCompleta, TurmaCompleta } from "@/lib/TurmaApi";
 import ResponsavelPageComponent from "@/components/responsavel/ResponsavelPage";
 
 interface Usuario {
@@ -23,8 +24,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const { id } = context.query;
   const idNum = Number(id);
 
-  // Buscar turmas do responsável
-  const turmas = await fetchTurmaCompleta(idNum);
+  // Validar id
+  if (isNaN(idNum)) {
+    return { notFound: true };
+  }
 
   // Buscar dados do usuário responsável
   const usuarios = await fetchUsuarios();
@@ -33,6 +36,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   if (!usuario) {
     return { notFound: true };
   }
+
+  // Buscar turmas completas do responsável
+  const turmas = await fetchTurmaCompleta(idNum);
 
   return {
     props: {

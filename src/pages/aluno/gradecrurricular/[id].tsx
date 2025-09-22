@@ -1,6 +1,6 @@
 // pages/aluno/grade-curricular/[id].tsx
 import { GetServerSideProps } from "next";
-import AlunoGradeCurricular from "@/components/Alunos/gradeCurricular";
+import AlunoGradeCurricular from "@/components/Aluno/gradeCurricular";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmasDoAluno, fetchTurmaCompleta } from "@/lib/TurmaApi";
 import {

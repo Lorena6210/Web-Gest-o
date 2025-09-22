@@ -39,6 +39,7 @@ const Turmas: React.FC<AlunoPageProps> = ({ usuario, turmas }) => {
         flex: 1,
         padding: '20px',
         overflowY: 'auto',
+        marginLeft: '250px',
       }}>
         <h2 style={{
           textAlign: 'center',

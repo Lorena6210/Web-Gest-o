@@ -1,12 +1,9 @@
-import React, { useState } from "react";
-import { TurmaCompleta } from "@/Types/Turma";
+// components/Professores/ProfessorPage.tsx
+import React, { useState, useEffect } from "react";
 import Navbar from "../Navbar";
 import {
   Box,
-  Card,
   Typography,
-  TextField,
-  Button,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -16,10 +13,13 @@ import {
   TableRow,
   TableCell,
   TableBody,
+  TextField,
+  Button
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Prova, NotaProva } from "@/lib/provaApi";
+import { TurmaCompleta } from "@/Types/Turma";
 
 interface Usuario {
   Nome: string;
@@ -28,34 +28,44 @@ interface Usuario {
 }
 
 interface Props {
-  turma: TurmaCompleta;
   usuario: Usuario;
-  provasPorBimestre: Record<number, Prova[]>;
+  turmas: TurmaCompleta[];
+  provasPorTurma: Record<number, Prova[]>;
   notasProvas: NotaProva[];
 }
 
-export default function ProfessorProvaPageComponent({
+export default function ProfessorPageComponent({
   usuario,
-  turma,
-  provasPorBimestre,
+  turmas,
+  provasPorTurma,
   notasProvas,
 }: Props) {
-  const [provas, setProvas] = useState<Prova[]>(
-    Object.values(provasPorBimestre).flat()
-  );
+  // Você pode permitir selecionar uma turma para exibir; por simplicidade vou pegar a primeira
+  const turmaSelecionada = turmas[0];
 
-  const [notas, setNotas] = useState<Record<string, number>>(() => {
+  const provas = turmaSelecionada
+    ? provasPorTurma[turmaSelecionada.Id] || []
+    : [];
+
+  // Estado local de notas para inputs
+  const [notas, setNotas] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    // Inicializar o estado com notas vindas das props
     const map: Record<string, number> = {};
     notasProvas.forEach(n => {
       const chave = `${n.Id_Aluno}-${n.Id_Prova}`;
       map[chave] = n.Valor;
     });
-    return map;
-  });
+    setNotas(map);
+  }, [notasProvas]);
 
   const handleNotaChange = (alunoId: number, provaId: number, valor: string) => {
     const chave = `${alunoId}-${provaId}`;
-    setNotas(prev => ({ ...prev, [chave]: parseFloat(valor) }));
+    setNotas(prev => ({
+      ...prev,
+      [chave]: parseFloat(valor),
+    }));
   };
 
   const salvarNotas = (provaId: number) => {
@@ -63,91 +73,106 @@ export default function ProfessorProvaPageComponent({
       .filter(([chave]) => chave.endsWith(`-${provaId}`))
       .map(([chave, valor]) => {
         const [alunoId] = chave.split("-");
-        return { Id_Aluno: Number(alunoId), Id_Prova: provaId, Valor: valor };
+        return {
+          Id_Aluno: Number(alunoId),
+          Id_Prova: provaId,
+          Valor: valor,
+        };
       });
-    console.log("Salvando notas:", notasProva);
-    // Aqui você pode chamar a API real
-    // fetch("/notas", { method: "POST", body: JSON.stringify(notasProva) })
+    console.log("Salvando notas da prova", provaId, notasProva);
+    // Aqui você chamaria fetch de salvar notas
   };
 
-  const excluirProva = (id: number) => {
-    setProvas(prev => prev.filter(p => p.id !== id));
-    console.log("Excluir prova:", id);
-    // Aqui você pode chamar fetchDeletarProva(id)
+  const excluirProva = (provaId: number) => {
+    console.log("Excluir prova:", provaId);
+    // chamar fetchDeletarProva(provaId) etc
   };
 
   return (
     <div>
       <Navbar usuario={usuario} />
-      <Box sx={{ width: "70%", margin: "20px auto", marginLeft:'320px' }}>
+      <Box sx={{ width: "70%", margin: "20px auto", marginLeft: "320px" }}>
         <Typography variant="h5" sx={{ mb: 2 }}>
-          Provas da turma {turma.Nome}
+          {turmaSelecionada
+            ? `Provas da turma ${turmaSelecionada.Nome}`
+            : "Nenhuma turma selecionada"}
         </Typography>
 
-        {Object.entries(provasPorBimestre).map(([bimestre, provasBimestre]) => (
-          <Box key={bimestre} sx={{ mb: 3 }}>
-            <Typography variant="h6">Bimestre {bimestre}</Typography>
-            {provasBimestre.map(p => (
-              <Accordion key={p.id} sx={{ mb: 2 }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography sx={{ flexGrow: 1 }}>{p.titulo}</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-                    <IconButton color="error" size="small" onClick={() => excluirProva(p.id)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
+        {provas.length === 0 && (
+          <Typography>Nenhuma prova para essa turma.</Typography>
+        )}
+
+        {provas.map(p => (
+          <Box key={p.id} sx={{ mb: 3 }}>
+            <Accordion>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography sx={{ flexGrow: 1 }}>
+                  {p.titulo}{" "}
+                  {p.dataEntrega ? `- entrega: ${p.dataEntrega}` : ""}
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+                  <IconButton
+                    color="error"
+                    size="small"
+                    onClick={() => excluirProva(p.id)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+
+                {p.descricao && (
                   <Typography variant="subtitle1" sx={{ mb: 2 }}>
                     {p.descricao}
                   </Typography>
+                )}
 
-                  {turma.alunos && turma.alunos.length > 0 ? (
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Aluno</TableCell>
-                          <TableCell>Nota ({p.disciplina})</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {turma.alunos.map(aluno => {
-                          const chave = `${aluno.Id}-${p.id}`;
-                          return (
-                            <TableRow key={chave}>
-                              <TableCell>{aluno.Nome}</TableCell>
-                              <TableCell>
-                                <TextField
-                                  type="number"
-                                  size="small"
-                                  value={notas[chave] ?? ""}
-                                  onChange={e =>
-                                    handleNotaChange(aluno.Id, p.id, e.target.value)
-                                  }
-                                  inputProps={{ step: 0.1, min: 0, max: 10 }}
-                                  sx={{ width: 80 }}
-                                />
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <Typography>Nenhum aluno na turma</Typography>
-                  )}
+                {turmaSelecionada.alunos && turmaSelecionada.alunos.length > 0 ? (
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Aluno</TableCell>
+                        <TableCell>Nota</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {turmaSelecionada.alunos.map(aluno => {
+                        const chave = `${aluno.Id}-${p.id}`;
+                        return (
+                          <TableRow key={chave}>
+                            <TableCell>{aluno.Nome}</TableCell>
+                            <TableCell>
+                              <TextField
+                                type="number"
+                                size="small"
+                                value={notas[chave] ?? ""}
+                                onChange={e =>
+                                  handleNotaChange(aluno.Id, p.id, e.target.value)
+                                }
+                                inputProps={{ step: 0.1, min: 0, max: 10 }}
+                                sx={{ width: 80 }}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <Typography>Nenhum aluno nessa turma</Typography>
+                )}
 
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => salvarNotas(p.id)}
-                    sx={{ mt: 2 }}
-                  >
-                    Salvar Notas
-                  </Button>
-                </AccordionDetails>
-              </Accordion>
-            ))}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => salvarNotas(p.id)}
+                  sx={{ mt: 2 }}
+                >
+                  Salvar Notas
+                </Button>
+              </AccordionDetails>
+            </Accordion>
           </Box>
         ))}
       </Box>

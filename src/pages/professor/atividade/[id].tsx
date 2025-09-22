@@ -10,10 +10,17 @@ interface Usuario {
   Id: number;
   Tipo: string;
 }
+
 interface Atividade {
   id: number;
   titulo: string;
-  turmaId: number;
+  descricao: string;
+  dataCriacao: string;
+  dataEntrega: string;
+  professor: string;
+  turma: string;
+  disciplina: string;
+  turmaId?: number | null; // opcional, caso queira usar
 }
 
 interface Props {
@@ -38,7 +45,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
 
   const turmas = await fetchTurmasDoProfessor(idNum);
 
-  const atividadesResponse = await fetchAtividades();
+  const atividadesResponse = await fetchAtividades(idNum);
   const atividadesArray: Atividade[] = Array.isArray(atividadesResponse)
     ? atividadesResponse
     : atividadesResponse?.atividades || [];
@@ -50,7 +57,13 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
       atividades: atividadesArray.map((atividade) => ({
         id: atividade.id,
         titulo: atividade.titulo,
-        turmaId: atividade.turmaId ?? null, // evita undefined
+        descricao: atividade.descricao ?? '',
+        dataCriacao: atividade.dataCriacao ?? '',
+        dataEntrega: atividade.dataEntrega ?? '',
+        professor: atividade.professor ?? '',
+        turma: atividade.turma ?? '',
+        disciplina: atividade.disciplina ?? '',
+        turmaId: atividade.turmaId ?? null,
       })),
     },
   };

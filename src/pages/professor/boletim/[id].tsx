@@ -34,20 +34,22 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const idNum = Number(id);
 
   const usuarios = await fetchUsuarios();
-  const usuario = usuarios.professores?.find((u: { Id: number; }) => u.Id === idNum);
+  const usuario = usuarios.professores?.find((u: { Id: number }) => u.Id === idNum);
 
   if (!usuario) return { notFound: true };
 
   const turmas = await fetchTurmasDoProfessor(idNum);
-//   const boletim = await fetchBoletim(idNum);
-// 
-return {
-  props: { 
-    usuario, 
-    turma: turmas[0], 
-    boletim: await fetchGetBoletins(),
-    Disciplina: await fetchDisciplinas(),
-    Aluno: await fetchAlunos()
-  },
-};
+  const boletim = await fetchGetBoletins();
+  const Disciplina = await fetchDisciplinas();
+  const Aluno = await fetchAlunos();
+
+  return {
+    props: {
+      usuario,
+      turmas,
+      boletim,
+      Disciplina,
+      Aluno,
+    },
+  };
 };

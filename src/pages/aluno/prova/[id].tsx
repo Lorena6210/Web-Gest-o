@@ -3,7 +3,7 @@ import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmasDoAluno } from '@/lib/TurmaApi';
 import { TurmaCompleta } from '@/Types/Turma';
-import AlunoPageComponent from "@/components/Alunos/AlunoPage";
+import AlunoPageComponent from "@/components/Aluno/prova";
 
 interface Usuario {
   Nome: string;

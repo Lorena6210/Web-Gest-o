@@ -1,9 +1,11 @@
+// pages/aluno.tsx (ou pages/professor.tsx dependendo do seu caso)
+
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
-import { fetchTurmasDoAluno } from '@/lib/TurmaApi'; // nova função específica para aluno
-import { fetchAtividades } from '@/lib/atividadeApi'
-import { TurmaCompleta } from '@/Types/Turma';
-import AlunoAtividadePageComponent from "@/components/Alunos/atividade"; // componente de visualização para aluno
+import { fetchTurmaCompleta } from "@/lib/TurmaApi";
+import { fetchAtividades } from "@/lib/atividadeApi";
+import ProfessorAtividadePageComponentI from "@/components/Aluno/atividade"; // ou Professor, dependendo do nome correto
+import { TurmaCompleta } from "@/Types/Turma";
 
 interface Usuario {
   Nome: string;
@@ -11,54 +13,88 @@ interface Usuario {
   Tipo: string;
 }
 
-interface Atividade {
+interface AtividadeDetalhada {
   id: number;
   titulo: string;
-  turmaId: number;
+  descricao: string;
+  dataCriacao: string;
+  dataEntrega: string;
+  dataFinalizacao: string;
+  professor: string;
+  turma: string;
+  disciplina: string;
 }
 
 interface Props {
   usuario: Usuario;
   turmas: TurmaCompleta[];
-  atividades: Atividade[];
+  atividades: AtividadeDetalhada[];
 }
 
-export default function AlunoPageContainer({ usuario, turmas, atividades }: Props) {
-  return <AlunoAtividadePageComponent usuario={usuario} turmas={turmas} atividades={atividades} />;
+export default function AlunoPageContainer({
+  usuario,
+  turmas,
+  atividades,
+}: Props) {
+  return (
+    <ProfessorAtividadePageComponentI
+      usuario={usuario}
+      turmas={turmas}
+      atividades={atividades}
+    />
+  );
 }
 
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-  const { id } = context.query;
+  const { id, bimestre } = context.query;
   const idNum = Number(id);
+  const bimestreNum = Number(bimestre) || null;
 
   if (!id || isNaN(idNum)) {
     return { notFound: true };
   }
 
+  // Buscar usuário
   const usuarios = await fetchUsuarios();
-  const usuario = usuarios.alunos?.find((u: Usuario) => u.Id === idNum); // buscar aluno
-
+  const usuario = usuarios.alunos?.find((u: Usuario) => u.Id === idNum);
   if (!usuario) {
     return { notFound: true };
   }
 
   // Buscar turmas do aluno
-  const turmas = await fetchTurmasDoAluno(idNum);
+  const turmas = await fetchTurmaCompleta(idNum);
+  const turmasIds = turmas.map((turma) => turma.idTurma);
 
-  // Buscar atividades
-  const atividadesResponse = await fetchAtividades();
-  const atividadesArray: Atividade[] = Array.isArray(atividadesResponse)
-    ? atividadesResponse
-    : atividadesResponse?.atividades || [];
+  // Buscar todas as atividades (que retornam no formato { atividades: [...], filtroBimestre: 1 })
+  const atividadesResponse = await fetchAtividades(idNum);
 
-  // Filtrar atividades apenas das turmas do aluno
-const turmasIds = turmas.map(({ id }: { id: number }) => id);
-const atividadesDoAluno = atividadesArray
-    .filter(a => turmasIds.includes(a.turmaId))
+  // Extrair array de atividades
+  const atividadesArray = Array.isArray(atividadesResponse?.atividades)
+    ? atividadesResponse.atividades
+    : [];
+
+  // Filtrar atividades que pertencem às turmas do aluno e ao bimestre, se houver filtro
+  const atividadesDoAluno = atividadesArray
+    .filter((atividade) => {
+      // Verifica se a atividade pertence a turma do aluno
+      const turmaMatch = turmas.some((t) => t.Nome === atividade.turma);
+
+      // Verifica o filtro de bimestre, se aplicado
+      const bimestreMatch = bimestreNum
+        ? atividade.idBimestre === bimestreNum
+        : true;
+
+      return turmaMatch && bimestreMatch;
+    })
     .map((atividade) => ({
       id: atividade.id,
       titulo: atividade.titulo,
-      turmaId: atividade.turmaId ?? null,
+      descricao: atividade.descricao,
+      dataCriacao: atividade.dataCriacao,
+      dataEntrega: atividade.dataEntrega,
+      professor: atividade.professor,
+      turma: atividade.turma,
+      disciplina: atividade.disciplina,
     }));
 
   return {

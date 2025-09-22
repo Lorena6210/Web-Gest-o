@@ -17,8 +17,6 @@ interface AlunoPageProps {
 export default function Navbar({usuario}:AlunoPageProps){    
       const router = useRouter();
 
-      const goToAtividade = () => router.push(`/responsavel/atividade/${usuario.Id}`);
-      const goToGradeCurricular = () => router.push(`/responsavel/grade-curricular/${usuario.Id}`);
       const goToProva = () => router.push(`/responsavel/prova/${usuario.Id}`);
       const goToBoletim = () => router.push(`/responsavel/boletim/${usuario.Id}`);
 
@@ -38,14 +36,6 @@ return (
       {/* Menu */}
       <nav style={{ flex: 1, marginTop: 16 }}>
         <ul style={styles.menuList}>
-          <li style={styles.menuItem} onClick={goToAtividade} tabIndex={0} role="button" aria-label="Atividades">
-            <FaCalendarAlt style={styles.icon} />
-            <span>Atividades</span>
-          </li>
-          <li style={styles.menuItem} onClick={goToGradeCurricular} tabIndex={0} role="button" aria-label="Notas">
-            <SiVbulletin style={styles.icon} />
-            <span>Grade Curricular</span>
-          </li>
           <li style={styles.menuItem} onClick={goToProva} tabIndex={0} role="button" aria-label="Provas">
             <FaUsers style={styles.icon} />
             <span>Provas</span>

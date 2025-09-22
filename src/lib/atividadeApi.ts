@@ -32,6 +32,14 @@ export interface NotaAtividade {
   Valor: number;
 }
 
+export interface Bimestre{
+  id: number;
+  nome: string;
+  dataInicio: string;
+  dataFim: string;
+  status: string;
+}
+
 const API_BASE = "http://localhost:3001";
 
 // -------------------------
@@ -39,8 +47,8 @@ const API_BASE = "http://localhost:3001";
 // -------------------------
 
 // GET /atividades
-export const fetchAtividades = async (): Promise<Atividade[]> => {
-  const response = await fetch(`${API_BASE}/atividades`);
+export const fetchAtividades = async (id:number): Promise<Atividade[]> => {
+  const response = await fetch(`${API_BASE}/atividades?bimestre=${id}`);
   if (!response.ok) throw new Error("Erro ao buscar atividades");
   return response.json();
 };

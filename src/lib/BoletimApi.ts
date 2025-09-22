@@ -21,6 +21,20 @@ export interface Nota {
   Id_Prova?: number;
 }
 
+export interface Aluno {
+  Id: number;
+  Nome: string;
+  Email: string;
+  Tipo: string;
+}
+
+export interface Disciplina {
+  Id: number;
+  Nome: string;
+  Codigo: string;
+  CargaHoraria: number;
+}
+
 //  NOTAS
 export const fetchCreateOrUpdateNotaAtividade = async (nota: Nota) => {
   const response = await fetch("http://localhost:3001/notas/atividade", {

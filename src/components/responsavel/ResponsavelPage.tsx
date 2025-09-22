@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -8,19 +9,20 @@ import {
   CircularProgress,
 } from "@mui/material";
 import MuiAlert, { AlertColor } from "@mui/material/Alert";
+import Navbar from "./Navbar";
 
 interface Responsavel {
   Id: number;
   Nome: string;
-  Email: string;
-  Telefone: string;
-  Parentesco: string;
+  Email?: string;
+  Telefone?: string;
+  Parentesco?: string;
 }
 
 interface Aluno {
   Id: number;
   Nome: string;
-  RA: string;
+  RA?: string;
   Id_Responsavel: number;
 }
 
@@ -33,11 +35,29 @@ interface Evento {
   CriadoPor: string;
 }
 
-export default function ResponsavelPage() {
-  const [responsaveis, setResponsaveis] = useState<Responsavel[]>([]);
+interface Props {
+  usuario: {
+    Nome: string;
+    Id: number;
+    Tipo: string;
+  };
+  turmas: {
+    Id: number;
+    Nome: string;
+    alunos?: Aluno[];
+    // outros campos que TurmaCompleta tiver
+  }[];
+}
+
+const Alert = React.forwardRef<HTMLDivElement, { severity: AlertColor; children: React.ReactNode }>(
+  (props, ref) => <MuiAlert elevation={6} ref={ref} variant="filled" severity={props.severity}>{props.children}</MuiAlert>
+);
+
+export default function ResponsavelPageComponent({ usuario, turmas }: Props) {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [eventos, setEventos] = useState<Evento[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingAlunos, setLoadingAlunos] = useState(false);
+  const [loadingEventos, setLoadingEventos] = useState(false);
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -49,101 +69,78 @@ export default function ResponsavelPage() {
     setSnackbarOpen(true);
   };
 
-  // 🔹 Carrega responsáveis
-  useEffect(() => {
-    const fetchResponsaveis = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch("http://localhost:3000/responsaveis");
-        if (!res.ok) throw new Error("Erro ao carregar responsáveis");
-        const data: Responsavel[] = await res.json();
-        setResponsaveis(data);
-      } catch (err) {
-        console.error(err);
-        showSnackbar("Erro ao carregar responsáveis", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchResponsaveis();
-  }, []);
-
-  // 🔹 Carrega alunos do responsável
-  const handleVerAlunos = async (idResponsavel: number) => {
+  // Função para carregar alunos do responsável
+  const fetchAlunosDoResponsavel = async () => {
     try {
-      setLoading(true);
-      const res = await fetch(
-        `http://localhost:3000/responsaveis/${idResponsavel}/alunos`
-      );
+      setLoadingAlunos(true);
+      const res = await fetch(`http://localhost:3001/alunos?Id_Responsavel=${usuario.Id}`);
       if (!res.ok) throw new Error("Erro ao carregar alunos");
       const data: Aluno[] = await res.json();
       setAlunos(data);
-      setEventos([]);
+      setEventos([]); // limpa eventos anteriores
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao buscar alunos do responsável:", err);
       showSnackbar("Erro ao carregar alunos", "error");
     } finally {
-      setLoading(false);
+      setLoadingAlunos(false);
     }
   };
 
-  // 🔹 Carrega eventos de um aluno
-  const handleVerEventos = async (idAluno: number) => {
+  // Função para carregar eventos de um aluno específico
+  const fetchEventosDoAluno = async (idAluno: number) => {
     try {
-      setLoading(true);
-      const res = await fetch(`http://localhost:3000/eventos?Id_Aluno=${idAluno}`);
+      setLoadingEventos(true);
+      const res = await fetch(`http://localhost:3001/eventos?Id_Aluno=${idAluno}`);
       if (!res.ok) throw new Error("Erro ao carregar eventos");
       const data: Evento[] = await res.json();
       setEventos(data);
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao buscar eventos do aluno:", err);
       showSnackbar("Erro ao carregar eventos", "error");
     } finally {
-      setLoading(false);
+      setLoadingEventos(false);
     }
   };
 
   return (
     <Box sx={{ p: 4 }}>
-      <Typography variant="h4">Responsáveis</Typography>
+      <Navbar usuario={usuario} />
 
-      {loading && <CircularProgress sx={{ mt: 2 }} />}
+      <Typography variant="h4" sx={{ mb: 2 }}>
+        Bem-vindo, {usuario.Nome}
+      </Typography>
 
-      {/* Lista de Responsáveis */}
-      {responsaveis.map((resp) => (
-        <Box
-          key={resp.Id}
-          sx={{ border: "1px solid #ccc", p: 2, my: 2, borderRadius: 2 }}
-        >
-          <Typography variant="h6">{resp.Nome}</Typography>
-          <Typography>Email: {resp.Email}</Typography>
-          <Typography>Telefone: {resp.Telefone}</Typography>
-          <Typography>Parentesco: {resp.Parentesco}</Typography>
-          <Button
-            variant="outlined"
-            sx={{ mt: 1 }}
-            onClick={() => handleVerAlunos(resp.Id)}
-          >
-            Ver Alunos
-          </Button>
-        </Box>
-      ))}
+      <Typography variant="h5" sx={{ mt: 2 }}>Turmas vinculadas</Typography>
+      {turmas.length === 0 ? (
+        <Typography>Nenhuma turma encontrada.</Typography>
+      ) : (
+        turmas.map((turma) => (
+          <Box key={turma.Id} sx={{ border: "1px solid #ccc", p: 2, my: 2, borderRadius: 2 }}>
+            <Typography variant="h6">{turma.Nome}</Typography>
+            <Button
+              variant="outlined"
+              sx={{ mt: 1 }}
+              onClick={fetchAlunosDoResponsavel}
+            >
+              Ver Alunos
+            </Button>
+          </Box>
+        ))
+      )}
 
-      {/* Lista de Alunos */}
+      {loadingAlunos && <CircularProgress sx={{ mt: 2 }} />}
+      
       {alunos.length > 0 && (
         <Box sx={{ mt: 4 }}>
           <Typography variant="h5">Alunos</Typography>
           {alunos.map((aluno) => (
-            <Box
-              key={aluno.Id}
-              sx={{ border: "1px solid #aaa", p: 2, my: 2, borderRadius: 2 }}
-            >
+            <Box key={aluno.Id} sx={{ border: "1px solid #aaa", p: 2, my: 2, borderRadius: 2 }}>
               <Typography variant="h6">{aluno.Nome}</Typography>
               <Typography>RA: {aluno.RA}</Typography>
               <Button
                 variant="contained"
                 sx={{ mt: 1 }}
-                onClick={() => handleVerEventos(aluno.Id)}
+                onClick={() => fetchEventosDoAluno(aluno.Id)}
               >
                 Ver Eventos
               </Button>
@@ -152,7 +149,8 @@ export default function ResponsavelPage() {
         </Box>
       )}
 
-      {/* Lista de Eventos */}
+      {loadingEventos && <CircularProgress sx={{ mt: 2 }} />}
+
       {eventos.length > 0 && (
         <Box sx={{ mt: 4 }}>
           <Typography variant="h5">Eventos</Typography>
@@ -169,9 +167,7 @@ export default function ResponsavelPage() {
             >
               <Typography variant="h6">{ev.Titulo}</Typography>
               <Typography>{ev.Descricao}</Typography>
-              <Typography>
-                Data: {new Date(ev.Data).toLocaleDateString("pt-BR")}
-              </Typography>
+              <Typography>Data: {new Date(ev.Data).toLocaleDateString("pt-BR")}</Typography>
               <Typography>Criado por: {ev.CriadoPor}</Typography>
             </Box>
           ))}
@@ -183,9 +179,7 @@ export default function ResponsavelPage() {
         autoHideDuration={4000}
         onClose={() => setSnackbarOpen(false)}
       >
-        <MuiAlert severity={snackbarSeverity} variant="filled">
-          {snackbarMessage}
-        </MuiAlert>
+        <Alert severity={snackbarSeverity}>{snackbarMessage}</Alert>
       </Snackbar>
     </Box>
   );

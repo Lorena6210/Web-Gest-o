@@ -1,35 +1,39 @@
+// pages/professor/[id].tsx
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
-import { fetchTurmasDoProfessor } from '@/lib/TurmaApi';
-import { TurmaCompleta } from '@/Types/Turma';
-import { 
-  fetchProvas, 
-  fetchNotasProva, 
-  Prova, 
-  NotaProva 
-} from '@/lib/provaApi';
-import ProfessorProvaPageComponent from "@/components/Professores/prova";
+import { fetchTurmasDoProfessor } from "@/lib/TurmaApi";
+import { TurmaCompleta } from "@/Types/Turma";
+import ProfessorPageComponent from "@/components/Professores/ProfessorPage";
+import { Prova, fetchProvas } from "@/lib/provaApi";
+import { NotaProva, fetchNotasProva } from "@/lib/provaApi";
 
 interface Usuario {
-    Nome: string;
-    Id: number;
-    Tipo: string;
+  Nome: string;
+  Id: number;
+  Tipo: string;
 }
 
 interface Props {
-    usuario: Usuario;
-    turma: TurmaCompleta;  
-    provasPorBimestre: Record<number, Prova[]>; // separadas por bimestre
-    notasProvas: NotaProva[];
+  usuario: Usuario;
+  turmas: TurmaCompleta[];
+  // novo:
+  provasPorTurma: Record<number, Prova[]>; // chave = idTurma
+  notasProvas: NotaProva[];
 }
 
-export default function ProfessorProvaPage({ usuario, turma, provasPorBimestre, notasProvas }: Props) {
+export default function ProfessorPageContainer({
+  usuario,
+  turmas,
+  provasPorTurma,
+  notasProvas,
+}: Props) {
+  // Se você quiser, pode selecionar uma turma padrão, ou passar tudo para componente
   return (
-    <ProfessorProvaPageComponent 
-      usuario={usuario} 
-      turma={turma} 
-      provasPorBimestre={provasPorBimestre} 
-      notasProvas={notasProvas} 
+    <ProfessorPageComponent
+      usuario={usuario}
+      turmas={turmas}
+      provasPorTurma={provasPorTurma}
+      notasProvas={notasProvas}
     />
   );
 }
@@ -38,42 +42,53 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
   const { id } = context.query;
   const idNum = Number(id);
 
-  // Buscar professor
+  if (!id || isNaN(idNum)) {
+    return { notFound: true };
+  }
+
+  // Buscar o professor pelo ID
   const usuarios = await fetchUsuarios();
-  const usuario = usuarios.professores?.find((u: { Id: number }) => u.Id === idNum);
-  if (!usuario) return { notFound: true };
+  const usuario = usuarios.professores?.find((u: Usuario) => u.Id === idNum);
 
-  // Buscar turmas do professor
+  if (!usuario) {
+    return { notFound: true };
+  }
+
   const turmas = await fetchTurmasDoProfessor(idNum);
-  const turma = turmas[0];
-  if (!turma) return { notFound: true };
 
-  // Buscar todas as provas da turma
-// Buscar todas as provas da turma
-const provasResponse = await fetchProvas(turma.Id);
-const provas: Prova[] = Array.isArray(provasResponse) ? provasResponse : provasResponse?.provas || [];
+  // Agora carregar as provas de cada turma
+  const provasPorTurma: Record<number, Prova[]> = {};
 
-// Buscar notas de todas as provas
-const notasProvasArrays = await Promise.all(provas.map(p => fetchNotasProva(p.id)));
-const notasProvas = notasProvasArrays.flat(); // achata array de arrays
+  for (const turma of turmas) {
+    try {
+      const provas = await fetchProvas(turma.Id);
+      provasPorTurma[turma.Id] = provas;
+    } catch (error) {
+      console.error(`Erro ao buscar provas da turma ${turma.Id}`, error);
+      provasPorTurma[turma.Id] = [];
+    }
+  }
 
-
-  // Separar provas por bimestre (exemplo simples: bimestre 1-4 baseado no mês)
-  const provasPorBimestre: Record<number, Prova[]> = {};
-  provas.forEach(p => {
-    const dataEntrega = p.dataEntrega ? new Date(p.dataEntrega) : new Date();
-    const mes = dataEntrega.getMonth(); // 0-11
-    const bimestre = Math.floor(mes / 2) + 1; // 1-6 => 1-3?
-    if (!provasPorBimestre[bimestre]) provasPorBimestre[bimestre] = [];
-    provasPorBimestre[bimestre].push(p);
-  });
+  // Carregar todas as notas de provas (opcional: filtrar por turmas/provas específicas)
+  let notasProvas: NotaProva[] = [];
+  for (const turma of turmas) {
+    const provas = provasPorTurma[turma.Id] || [];
+    for (const prova of provas) {
+      try {
+        const notas = await fetchNotasProva(prova.id);
+        notasProvas = notasProvas.concat(notas);
+      } catch (error) {
+        console.error(`Erro ao buscar notas da prova ${prova.id}`, error);
+      }
+    }
+  }
 
   return {
-    props: { 
-      usuario, 
-      turma, 
-      provasPorBimestre,
-      notasProvas
+    props: {
+      usuario,
+      turmas,
+      provasPorTurma,
+      notasProvas,
     },
   };
 };
