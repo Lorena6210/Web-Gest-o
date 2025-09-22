@@ -1,8 +1,8 @@
 import React from 'react';
 import { useRouter } from 'next/router';
-import { FaCalendarAlt, FaUsers, } from 'react-icons/fa';
-import { SiVbulletin } from 'react-icons/si';
-
+import { FaCalendarAlt, FaUsers } from 'react-icons/fa';
+import { SiVbulletin } from "react-icons/si";
+import { FaRegSquarePlus } from "react-icons/fa6";
 
 interface Usuario {
   Nome: string;
@@ -16,11 +16,12 @@ interface AlunoPageProps {
 //  Sidebar Component
 export default function Navbar({usuario}:AlunoPageProps){    
       const router = useRouter();
-    
-      const goToAtividade = () => router.push(`/aluno/atividade/${usuario.Id}`);
-      const goToGradeCurricular = () => router.push(`/aluno/grade-curricular/${usuario.Id}`);
-      const goToProva = () => router.push(`/aluno/prova/${usuario.Id}`);
-    
+
+      const goToAtividade = () => router.push(`/responsavel/atividade/${usuario.Id}`);
+      const goToGradeCurricular = () => router.push(`/responsavel/grade-curricular/${usuario.Id}`);
+      const goToProva = () => router.push(`/responsavel/prova/${usuario.Id}`);
+      const goToBoletim = () => router.push(`/responsavel/boletim/${usuario.Id}`);
+
 return (
     <aside style={styles.sidebar}>
       {/* Logo e Nome */}
@@ -49,6 +50,10 @@ return (
             <FaUsers style={styles.icon} />
             <span>Provas</span>
           </li>
+            <li style={styles.menuItem} onClick={goToBoletim} tabIndex={0} role="button" aria-label="Boletim">
+              <FaRegSquarePlus style={styles.icon} />
+              <span>Boletim</span>
+            </li>
         </ul>
 
         {/* Rodapé */}
