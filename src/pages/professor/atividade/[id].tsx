@@ -10,12 +10,12 @@ interface Usuario {
   Id: number;
   Tipo: string;
 }
-
 interface Atividade {
   id: number;
   titulo: string;
   turmaId: number;
 }
+
 interface Props {
   usuario: Usuario;
   turmas: TurmaCompleta[];
@@ -25,7 +25,6 @@ interface Props {
 export default function ProfessorPageContainer({ usuario, turmas, atividades }: Props) {
   return <ProfessorAtividadePageComponentI usuario={usuario} turmas={turmas} atividades={atividades} />;
 }
-
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
   const { id } = context.query;
   const idNum = Number(id);
@@ -34,25 +33,25 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
     return { notFound: true };
   }
 
-  // Buscar o professor pelo ID
   const usuarios = await fetchUsuarios();
-const usuario = usuarios.professores?.find((u: Usuario) => u.Id === idNum);
+  const usuario = usuarios.professores?.find((u: Usuario) => u.Id === idNum);
 
-// Buscar as turmas do professor
-const turmas = await fetchTurmasDoProfessor(idNum);
+  const turmas = await fetchTurmasDoProfessor(idNum);
 
-// Buscar as atividades do professor
-const atividades = await fetchAtividades();
+  const atividadesResponse = await fetchAtividades();
+  const atividadesArray: Atividade[] = Array.isArray(atividadesResponse)
+    ? atividadesResponse
+    : atividadesResponse?.atividades || [];
 
-return {
-  props: {
-    usuario,
-    turmas,
-    atividades: atividades.map((atividade) => ({
-      id: atividade.id ?? 0,
-      titulo: atividade.titulo ?? "",
-      turmaId: atividade.turmaId ?? null,
-    })),
-  },
-};
+  return {
+    props: {
+      usuario,
+      turmas,
+      atividades: atividadesArray.map((atividade) => ({
+        id: atividade.id,
+        titulo: atividade.titulo,
+        turmaId: atividade.turmaId ?? null, // evita undefined
+      })),
+    },
+  };
 };

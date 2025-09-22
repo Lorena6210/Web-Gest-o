@@ -47,57 +47,61 @@ export interface Deletar {
   deletedId: number;
 }
 
-// -------------------------
-// Base URL
-// -------------------------
-const API_BASE = "http://localhost:3001";
-// -------------------------
-// Provas
-// -------------------------
-export const fetchProvas = async (turmaId?: number): Promise<Prova[]> => {
-  const url = turmaId ? `${API_BASE}/provas/turma/${turmaId}` : `${API_BASE}/provas`;
-  const response = await fetch(url);
+
+export const fetchProvas = async (idTurma: number): Promise<Prova[]> => {
+  const response = await fetch(`http://localhost:3001/provas/turma/${idTurma}`);
   if (!response.ok) throw new Error("Erro ao buscar provas");
   return response.json();
-};
+}
 
-export const createProva = async (prova: Partial<Prova>): Promise<Prova> => {
-  const response = await fetch(`${API_BASE}/provas`, {
+export const fetchProva = async (idTurma: number): Promise<Prova[]> => {
+  const response = await fetch(`http://localhost:3001/provas/turma/${idTurma}`);
+  if (!response.ok) throw new Error("Erro ao buscar prova");
+  return response.json();
+}
+
+export const fetchCriarProva = async (prova: Partial<Prova>): Promise<Prova> => {
+  const response = await fetch("http://localhost:3001/provas", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(prova),
   });
   if (!response.ok) throw new Error("Erro ao criar prova");
   return response.json();
-};
+}
 
-export const updateProva = async (id: number, prova: Partial<Prova>): Promise<void> => {
-  const response = await fetch(`${API_BASE}/provas/${id}`, {
+export const fetchAtualizarProva = async (id: number, prova: AtualizarProva): Promise<Prova> => {
+  const response = await fetch(`http://localhost:3001/provas/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(prova),
   });
   if (!response.ok) throw new Error("Erro ao atualizar prova");
-};
-
-export const deleteProva = async (id: number): Promise<void> => {
-  const response = await fetch(`${API_BASE}/provas/${id}`, { method: "DELETE" });
-  if (!response.ok) throw new Error("Erro ao deletar prova");
-};
-
-// Notas de Prova
-export const fetchNotasProva = async (provaId: number): Promise<NotaProva[]> => {
-  const response = await fetch(`${API_BASE}/provas/${provaId}/notas`);
-  if (!response.ok) throw new Error("Erro ao buscar notas de prova");
   return response.json();
-};
+}
 
-export const createNotaProva = async (provaId: number, nota: NotaProva): Promise<NotaProva> => {
-  const response = await fetch(`${API_BASE}/provas/${provaId}/notas`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(nota),
+export const fetchDeletarProva = async (id: number): Promise<Deletar> => {
+  const response = await fetch(`http://localhost:3001/provas/${id}`, {
+    method: "DELETE",
   });
-  if (!response.ok) throw new Error("Erro ao criar nota de prova");
+  if (!response.ok) throw new Error("Erro ao deletar prova");
   return response.json();
-};
+}
+
+export const fetchDetalhesProva = async (id: number): Promise<DetalhesProva> => {
+  const response = await fetch(`http://localhost:3001/provas/${id}/detalhes`);
+  if (!response.ok) throw new Error("Erro ao buscar detalhes da prova");
+  return response.json();
+}
+
+export const fetchNotasProva = async (idProva: number): Promise<NotaProva[]> => {
+  const response = await fetch(`http://localhost:3001/notas/prova/${idProva}`);
+  if (!response.ok) throw new Error("Erro ao buscar notas da prova");
+  return response.json();
+}
+
+export const fetchProvasPorBimestre = async (bimestre: number): Promise<Prova[]> => {
+  const response = await fetch(`http://localhost:3001/provas?bimestre=${bimestre}`);
+  if (!response.ok) throw new Error("Erro ao buscar provas por bimestre");
+  return response.json();
+}
