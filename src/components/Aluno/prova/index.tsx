@@ -1,7 +1,8 @@
 // components/Aluno/prova.tsx
-
-import React from "react";
+import { Prova, NotaProva } from "@/lib/provaApi";
 import { TurmaCompleta } from "@/Types/Turma";
+import Box from "@mui/material/Box";
+import Navbar from "../Navbar";
 
 interface Usuario {
   Nome: string;
@@ -12,27 +13,41 @@ interface Usuario {
 interface Props {
   usuario: Usuario;
   turmas: TurmaCompleta[];
+  provas: Prova[];
+  notas: NotaProva[];
 }
 
-const AlunoPageComponent: React.FC<Props> = ({ usuario, turmas }) => {
+export default function AlunoPageComponent({ usuario, turmas, provas, notas }: Props) {
   return (
-    <div>
-      <h1>Bem-vindo, {usuario.Nome}</h1>
-      <h2>Turmas:</h2>
+  <Box>
+    <Navbar usuario={usuario} turmas={turmas} />
+  <Box sx={{ padding: 2, marginLeft: '320px' }}>
+    <div style={{ padding: "20px" }}>
+      <h1>Provas do Aluno {usuario.Nome}</h1>
 
-      {turmas.length === 0 ? (
-        <p>Você não está matriculado em nenhuma turma.</p>
-      ) : (
-        <ul>
-          {turmas.map((turma) => (
-            <li key={turma.Id}>
-              <strong>{turma.Nome}</strong> - {turma.AnoLetivo}
-            </li>
-          ))}
-        </ul>
-      )}
+      {turmas.map((turma) => (
+        <div key={turma.Id} style={{ marginBottom: "20px" }}>
+          <h2>Turma {turma.Nome}</h2>
+          <ul>
+            {provas
+              .filter((prova) => prova.turmaId === turma.Id)
+              .map((prova) => {
+                const nota = notas.find((n) => n.provaId === prova.id && n.alunoId === usuario.Id);
+                return (
+                  <li key={prova.id} style={{ marginBottom: "10px" }}>
+                    <strong>{prova.nome}</strong>  
+                    <br />
+                    Conteúdo: {prova.descricao || "Não informado"}  
+                    <br />
+                    Nota: <strong>{nota ? nota.valor : "Ainda não lançada"}</strong>
+                  </li>
+                );
+              })}
+          </ul>
+        </div>
+      ))}
     </div>
+    </Box>
+    </Box>
   );
-};
-
-export default AlunoPageComponent;
+}

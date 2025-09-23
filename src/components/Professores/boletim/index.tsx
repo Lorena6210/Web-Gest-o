@@ -95,7 +95,7 @@ export default function ProfessorBoletimPage({ usuario, turmas = [], boletim }: 
   return (
     <div>
       <Navbar usuario={usuario} />
-      <Box sx={{ width: "90%", display: "flex", flexDirection: "column", alignItems: "center", mt: 4, px: 2 }}>
+      <Box sx={{marginLeft: "320px", width: "74%", display: "flex", flexDirection: "column", alignItems: "center", mt: 4, px: 2 }}>
         <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
           Boletim
         </Typography>

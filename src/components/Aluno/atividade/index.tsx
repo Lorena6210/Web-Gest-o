@@ -2,6 +2,8 @@
 
 import React from "react";
 import { TurmaCompleta } from "@/Types/Turma";
+import { Box } from "@mui/material";
+import Navbar from "../Navbar";
 
 interface Usuario {
   Nome: string;
@@ -31,7 +33,9 @@ const AtividadePage: React.FC<Props> = ({ usuario, turmas, atividades }) => {
   const isAluno = usuario.Tipo === "aluno";
 
   return (
-    <div>
+    <Box>
+      <Navbar usuario={usuario} turmas={turmas} />
+    <div style={{marginLeft: '320px', marginTop: '20px'}}>
       <h1>Atividades</h1>
 
       {atividades.length === 0 && (
@@ -56,21 +60,10 @@ const AtividadePage: React.FC<Props> = ({ usuario, turmas, atividades }) => {
           <p><strong>Turma:</strong> {atividade.turma}</p>
           <p><strong>Data de Entrega:</strong> {atividade.dataEntrega}</p>
 
-          {/* Botões só visíveis para professores */}
-          {!isAluno && (
-            <div style={{ marginTop: "12px" }}>
-              <button style={{ marginRight: "8px" }}>Editar</button>
-              <button>Excluir</button>
-            </div>
-          )}
         </div>
       ))}
-
-      {/* Botão de adicionar atividade - apenas para professores */}
-      {!isAluno && (
-        <button style={{ marginTop: "20px" }}>Adicionar Nova Atividade</button>
-      )}
     </div>
+    </Box>
   );
 };
 

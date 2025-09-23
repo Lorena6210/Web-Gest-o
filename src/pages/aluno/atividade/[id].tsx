@@ -46,9 +46,8 @@ export default function AlunoPageContainer({
 }
 
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-  const { id, bimestre } = context.query;
+  const { id } = context.query;
   const idNum = Number(id);
-  const bimestreNum = Number(bimestre) || null;
 
   if (!id || isNaN(idNum)) {
     return { notFound: true };
@@ -57,51 +56,30 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
   // Buscar usuário
   const usuarios = await fetchUsuarios();
   const usuario = usuarios.alunos?.find((u: Usuario) => u.Id === idNum);
+
   if (!usuario) {
     return { notFound: true };
   }
 
   // Buscar turmas do aluno
-  const turmas = await fetchTurmaCompleta(idNum);
+  const turmasResponse = await fetchTurmaCompleta(idNum);
+
+  // Garantir que seja sempre array
+  const turmas: TurmaCompleta[] = Array.isArray(turmasResponse)
+    ? turmasResponse
+    : turmasResponse?.turmas || [];
+
   const turmasIds = turmas.map((turma) => turma.idTurma);
 
-  // Buscar todas as atividades (que retornam no formato { atividades: [...], filtroBimestre: 1 })
+  // Buscar atividades
   const atividadesResponse = await fetchAtividades(idNum);
-
-  // Extrair array de atividades
-  const atividadesArray = Array.isArray(atividadesResponse?.atividades)
-    ? atividadesResponse.atividades
-    : [];
-
-  // Filtrar atividades que pertencem às turmas do aluno e ao bimestre, se houver filtro
-  const atividadesDoAluno = atividadesArray
-    .filter((atividade) => {
-      // Verifica se a atividade pertence a turma do aluno
-      const turmaMatch = turmas.some((t) => t.Nome === atividade.turma);
-
-      // Verifica o filtro de bimestre, se aplicado
-      const bimestreMatch = bimestreNum
-        ? atividade.idBimestre === bimestreNum
-        : true;
-
-      return turmaMatch && bimestreMatch;
-    })
-    .map((atividade) => ({
-      id: atividade.id,
-      titulo: atividade.titulo,
-      descricao: atividade.descricao,
-      dataCriacao: atividade.dataCriacao,
-      dataEntrega: atividade.dataEntrega,
-      professor: atividade.professor,
-      turma: atividade.turma,
-      disciplina: atividade.disciplina,
-    }));
+  const atividades = atividadesResponse?.atividades || [];
 
   return {
     props: {
       usuario,
       turmas,
-      atividades: atividadesDoAluno,
+      atividades,
     },
   };
 };

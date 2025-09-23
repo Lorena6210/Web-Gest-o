@@ -85,7 +85,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   // Buscar disciplinas específicas da turma
   const idDisciplina = disciplinas[0]?.Id || null;
-  const gradeDisciplinar = (idTurma && idDisciplina) ? await fetchDisciplinasPorGrade(idTurma, idDisciplina) : [];
+  const gradeDisciplinar = (idTurma && idDisciplina) ? await fetchDisciplinasPorGrade(idTurma,) : [];
 
   // Buscar professores por grade e disciplina
 const professoresPorGradeEDisciplina = (idTurma && gradeDisciplinar[0]?.Id)

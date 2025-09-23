@@ -1,4 +1,4 @@
-// pages/professor/[id].tsx
+// pages/professor/prova/[id].tsx
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmasDoProfessor } from "@/lib/TurmaApi";
@@ -16,7 +16,6 @@ interface Usuario {
 interface Props {
   usuario: Usuario;
   turmas: TurmaCompleta[];
-  // novo:
   provasPorTurma: Record<number, Prova[]>; // chave = idTurma
   notasProvas: NotaProva[];
 }
@@ -27,7 +26,6 @@ export default function ProfessorPageContainer({
   provasPorTurma,
   notasProvas,
 }: Props) {
-  // Se você quiser, pode selecionar uma turma padrão, ou passar tudo para componente
   return (
     <ProfessorPageComponent
       usuario={usuario}
@@ -62,14 +60,19 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
   for (const turma of turmas) {
     try {
       const provas = await fetchProvas(turma.Id);
-      provasPorTurma[turma.Id] = provas;
+
+      // Debug para ver o que vem da API
+      console.log("fetchProvas retorno turma", turma.Id, provas);
+
+      // Garantir que sempre será array
+      provasPorTurma[turma.Id] = Array.isArray(provas) ? provas : [];
     } catch (error) {
       console.error(`Erro ao buscar provas da turma ${turma.Id}`, error);
       provasPorTurma[turma.Id] = [];
     }
   }
 
-  // Carregar todas as notas de provas (opcional: filtrar por turmas/provas específicas)
+  // Carregar todas as notas das provas
   let notasProvas: NotaProva[] = [];
   for (const turma of turmas) {
     const provas = provasPorTurma[turma.Id] || [];
