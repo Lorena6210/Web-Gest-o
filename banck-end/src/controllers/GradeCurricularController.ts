@@ -358,18 +358,33 @@ export const listarGradeComDisciplinas = async (req: Request, res: Response) => 
 export const listarGradesCurriculares = async (_req: Request, res: Response) => {
   try {
     const sql = `
-      SELECT 
-        gc.Id,
+       SELECT 
+        gc.Id AS Id_GradeCurricular,
         gc.Codigo AS Codigo_Grade,
         gc.Id_Curso,
         gc.AnoInicio,
         gc.AnoFim,
-        gc.Descricao,
+        gc.Descricao AS Descricao_Grade,
+        gd.Id AS Id_GradeDisciplina,
+        d.Id AS Id_Disciplina,
+        d.Nome AS Nome_Disciplina,
+        d.Codigo AS Codigo_Disciplina,
+        gd.Semestre,
+        gd.Ordem,
+        gd.CargaHoraria,
+        gd.Obrigatoria,
+        gd.Bimestre,
         t.Id AS Id_Turma,
-        t.Nome AS Nome_Turma
+        t.Nome AS Nome_Turma,
+        p.Id AS Id_Professor,
+        p.Nome AS Nome_Professor
       FROM GradeCurricular gc
-      LEFT JOIN Turma t ON t.Id_GradeCurricular = gc.Id
-      ORDER BY gc.AnoInicio DESC, t.Nome;
+      LEFT JOIN GradeDisciplina gd ON gd.Id_GradeCurricular = gc.Id
+      LEFT JOIN Disciplina d ON gd.Id_Disciplina = d.Id
+      LEFT JOIN Professor_Turma_Disciplina ptd ON ptd.Id_Disciplina = d.Id
+      LEFT JOIN Professor p ON p.Id = ptd.Id_Professor
+      LEFT JOIN Turma t ON t.Id = ptd.Id_Turma
+      ORDER BY gc.Id, gd.Bimestre, gd.Semestre, gd.Ordem, p.Nome
     `;
 
     const [rows] = await pool.promise().query<RowDataPacket[]>(sql);

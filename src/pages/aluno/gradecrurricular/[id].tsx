@@ -25,46 +25,41 @@ export default function AlunoPage({ usuario, turmas, gradeCurricular }: Props) {
   return (
     <AlunoGradeCurricular
       usuario={usuario}
+      turmas={turmas}
       grades={gradeCurricular}
       idTurma={idTurma}
     />
   );
 }
+
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
   const { id } = context.query;
   const idNum = Number(id);
 
   if (!id || isNaN(idNum)) return { notFound: true };
 
-  // Buscar usuário
+  // Buscar aluno
   const usuarios = await fetchUsuarios();
   const usuario = usuarios.alunos?.find((u: Usuario) => u.Id === idNum);
   if (!usuario) return { notFound: true };
 
-  // Buscar turmas do aluno
+  // Buscar turma do aluno
   let turmas = await fetchTurmaCompleta(idNum);
   turmas = Array.isArray(turmas) ? turmas : turmas ? [turmas] : [];
-
   if (turmas.length === 0) return { notFound: true };
 
-  // Pegar a primeira turma do aluno
   const turma = turmas[0];
-
-  // Supondo que cada turma tenha um Id_GradeCurricular
   const idGrade = turma.Id_GradeCurricular;
-  let disciplinas: Disciplina[] = [];
 
-  if (idGrade) {
-    disciplinas = await fetchDisciplinasPorGrade(idGrade);
-  }
+  // Buscar apenas as disciplinas da grade
+  const disciplinas = idGrade ? await fetchDisciplinasPorGrade(idGrade) : [];
 
-  // Montar a grade curricular completa
+  // Retornar disciplinas como "gradeCurricular"
   const gradeCurricular: GradeCurricular[] = [
     {
       Id_GradeCurricular: idGrade,
-      Descricao_Grade: turma.Descricao_Grade,
+      Descricao_Grade: turma.Descricao_Grade || "Grade Curricular",
       Disciplinas: disciplinas,
-      // Adicione outros campos que precisar
     },
   ];
 

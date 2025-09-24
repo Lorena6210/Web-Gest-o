@@ -1,47 +1,50 @@
-import { GradeCurricular, Disciplina } from "@/lib/gradeCurricular";
+// components/Aluno/gradeCurricular/index.tsx
+import { Box, Typography, Table, TableBody, TableCell, TableHead, TableRow, Paper } from "@mui/material";
+import { GradeCurricular } from "@/lib/gradeCurricular";
 
 interface Props {
-  gradeCurricular: GradeCurricular[];
+  usuario: { Nome: string; Id: number };
+  grades: GradeCurricular[];
+  idTurma: number;
 }
 
-export default function TabelaGradeAluno({ gradeCurricular }: Props) {
-  if (!gradeCurricular || gradeCurricular.length === 0) {
-    return <p>Não há disciplinas disponíveis para exibição.</p>;
-  }
-
+export default function AlunoGradeCurricular({ usuario, grades }: Props) {
   return (
-    <div className="overflow-x-auto">
-      {gradeCurricular.map((grade) => (
-        <div key={grade.Id_GradeCurricular} className="mb-8">
-          <h2 className="text-xl font-bold mb-4">{grade.Descricao_Grade}</h2>
-          <table className="min-w-full border border-gray-300">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-2 border">Disciplina</th>
-                <th className="px-4 py-2 border">Semestre</th>
-                <th className="px-4 py-2 border">Ordem</th>
-                <th className="px-4 py-2 border">Carga Horária</th>
-                <th className="px-4 py-2 border">Bimestre</th>
-                <th className="px-4 py-2 border">Obrigatória</th>
-              </tr>
-            </thead>
-            <tbody>
-              {grade.Disciplinas.map((disciplina: Disciplina) => (
-                <tr key={disciplina.Id_GradeDisciplina}>
-                  <td className="px-4 py-2 border">{disciplina.Nome_Disciplina}</td>
-                  <td className="px-4 py-2 border">{disciplina.Semestre}</td>
-                  <td className="px-4 py-2 border">{disciplina.Ordem}</td>
-                  <td className="px-4 py-2 border">{disciplina.CargaHoraria}</td>
-                  <td className="px-4 py-2 border">{disciplina.Bimestre}</td>
-                  <td className="px-4 py-2 border">
-                    {disciplina.Obrigatoria ? "Sim" : "Não"}
-                  </td>
-                </tr>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h5" gutterBottom>
+        Olá, {usuario.Nome}! Aqui está sua grade curricular:
+      </Typography>
+
+      {grades.map((grade) => (
+        <Paper key={grade.Id_GradeCurricular} sx={{ mb: 3, p: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            {grade.Descricao_Grade}
+          </Typography>
+
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Código</TableCell>
+                <TableCell>Disciplina</TableCell>
+                <TableCell>Semestre</TableCell>
+                <TableCell>Bimestre</TableCell>
+                <TableCell>Carga Horária</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {grade.Disciplinas?.map((disciplina) => (
+                <TableRow key={disciplina.Id_Disciplina}>
+                  <TableCell>{disciplina.Codigo}</TableCell>
+                  <TableCell>{disciplina.Nome}</TableCell>
+                  <TableCell>{disciplina.Semestre}</TableCell>
+                  <TableCell>{disciplina.Bimestre}</TableCell>
+                  <TableCell>{disciplina.CargaHoraria}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Paper>
       ))}
-    </div>
+    </Box>
   );
 }

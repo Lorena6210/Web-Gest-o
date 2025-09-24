@@ -36,17 +36,6 @@ export const fetchGradesCurriculares = async (): Promise<GradeCurricular[]> => {
   return Array.isArray(data) ? data : [];
 };
 
-// Buscar disciplinas de uma grade específica
-export const fetchDisciplinasPorGrade = async (idGrade: number,): Promise<Disciplina[]> => {
-  const res = await fetch(`http://localhost:3001/grade-curricular/${idGrade}/disciplinas`);
-  if (!res.ok) {
-    const text = await res.text();
-    console.error("Erro ao buscar professores por grade e disciplina:", res.status, text);
-    throw new Error("Erro ao buscar professores por grade e disciplina");
-  }
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
-}
 
 // Criar nova grade
 export const createGradeCurricular = async (grade: Partial<GradeCurricular>): Promise<GradeCurricular> => {
