@@ -3,8 +3,7 @@ import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmasDoProfessor } from "@/lib/TurmaApi";
 import { TurmaCompleta } from "@/Types/Turma";
 import ProfessorPageComponent from "@/components/Professores/ProfessorPage";
-import { Prova, fetchProvasCompleto } from "@/lib/provaApi";
-import { NotaProva, fetchNotasProva } from "@/lib/provaApi";
+import { Prova, fetchProvasCompleto, NotaProva, fetchNotasProva } from "@/lib/provaApi";
 
 interface Usuario {
   Nome: string;
@@ -62,7 +61,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
   }
 
   // Buscar todas as notas das provas
-  const notasProvas: NotaProva[] = await fetchNotasProva();
+  const notasProvas: NotaProva[] = await fetchNotasProva(idNum);
 
   return {
     props: {

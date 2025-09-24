@@ -3,7 +3,7 @@ import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmaCompleta } from "@/lib/TurmaApi";
 import { TurmaCompleta } from "@/Types/Turma";
-import { Prova, fetchProvas, NotaProva, fetchNotasProva } from "@/lib/provaApi";
+import { Prova, fetchProvasCompleto, NotaProva, fetchNotasProva } from "@/lib/provaApi";
 import AlunoPageComponent from "@/components/Aluno/prova";
 
 interface Usuario {
@@ -48,7 +48,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
 
   for (const turma of turmas) {
     try {
-      const provasDaTurma = await fetchProvas(turma.Id);
+      const provasDaTurma = await fetchProvasCompleto(turma.Id);
       if (Array.isArray(provasDaTurma)) {
         provas = provas.concat(provasDaTurma);
 
