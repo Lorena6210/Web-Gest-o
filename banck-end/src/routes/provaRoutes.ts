@@ -1,7 +1,11 @@
 import { Router } from 'express';
-import {criarNotaProva, obterNotasProva, obterProvas, criarProva, atualizarProva, deletarProva, obterProvasPorTurma } from '../controllers/provaController';
+import {obterProvaCompleta, criarNotaProva, obterNotasProva, obterProvas, criarProva, atualizarProva, deletarProva, obterProvasPorTurma } from '../controllers/provaController';
 
 const router = Router();
+
+router.get('/completa', (req, res) => {
+    obterProvaCompleta(req, res)
+});
 
 router.get('/', obterProvas);
 router.post('/', (req, res) => {

@@ -1,10 +1,9 @@
-// pages/professor/prova/[id].tsx
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmasDoProfessor } from "@/lib/TurmaApi";
 import { TurmaCompleta } from "@/Types/Turma";
 import ProfessorPageComponent from "@/components/Professores/ProfessorPage";
-import { Prova, fetchProvas } from "@/lib/provaApi";
+import { Prova, fetchProvasCompleto } from "@/lib/provaApi";
 import { NotaProva, fetchNotasProva } from "@/lib/provaApi";
 
 interface Usuario {
@@ -16,7 +15,7 @@ interface Usuario {
 interface Props {
   usuario: Usuario;
   turmas: TurmaCompleta[];
-  provasPorTurma: Record<number, Prova[]>; // chave = idTurma
+  provasPorTurma: Record<number, Prova[]>;
   notasProvas: NotaProva[];
 }
 
@@ -46,45 +45,24 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
 
   // Buscar o professor pelo ID
   const usuarios = await fetchUsuarios();
-  const usuario = usuarios.professores?.find((u: Usuario) => u.Id === idNum);
+  const usuario = usuarios.professores?.find((prof) => prof.Id === idNum);
 
   if (!usuario) {
     return { notFound: true };
   }
 
+  // Buscar as turmas do professor
   const turmas = await fetchTurmasDoProfessor(idNum);
 
-  // Agora carregar as provas de cada turma
+  // Buscar as provas de cada turma
   const provasPorTurma: Record<number, Prova[]> = {};
-
   for (const turma of turmas) {
-    try {
-      const provas = await fetchProvas(turma.Id);
-
-      // Debug para ver o que vem da API
-      console.log("fetchProvas retorno turma", turma.Id, provas);
-
-      // Garantir que sempre será array
-      provasPorTurma[turma.Id] = Array.isArray(provas) ? provas : [];
-    } catch (error) {
-      console.error(`Erro ao buscar provas da turma ${turma.Id}`, error);
-      provasPorTurma[turma.Id] = [];
-    }
+    const provas = await fetchProvasCompleto(turma.Id);
+    provasPorTurma[turma.Id] = provas;
   }
 
-  // Carregar todas as notas das provas
-  let notasProvas: NotaProva[] = [];
-  for (const turma of turmas) {
-    const provas = provasPorTurma[turma.Id] || [];
-    for (const prova of provas) {
-      try {
-        const notas = await fetchNotasProva(prova.id);
-        notasProvas = notasProvas.concat(notas);
-      } catch (error) {
-        console.error(`Erro ao buscar notas da prova ${prova.id}`, error);
-      }
-    }
-  }
+  // Buscar todas as notas das provas
+  const notasProvas: NotaProva[] = await fetchNotasProva();
 
   return {
     props: {

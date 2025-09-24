@@ -1,4 +1,13 @@
 export interface GradeCurricular {
+  Id_GradeCurricular: any;
+  Id_Professor: number;
+  Bimestre: number;
+  Descricao_Grade: string | undefined;
+  CargaHoraria: number;
+  Semestre: number;
+  Codigo_Disciplina: string;
+  Nome_Disciplina: string;
+  Id_Disciplina: number;
   Id: number;
   Codigo_Grade: string | null;
   Id_Curso: number;

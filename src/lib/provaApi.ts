@@ -47,6 +47,11 @@ export interface Deletar {
   deletedId: number;
 }
 
+export const fetchProvasCompleto = async (idTurma: number): Promise<Prova[]> => {
+  const response = await fetch(`http://localhost:3001/provas/turma/${idTurma}`);
+  if (!response.ok) throw new Error("Erro ao buscar provas");
+  return response.json();
+}
 
 export const fetchProvas = async (idTurma: number): Promise<Prova[]> => {
   const response = await fetch(`http://localhost:3001/provas/turma/${idTurma}`);
