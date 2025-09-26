@@ -3,9 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const provaController_1 = require("../controllers/provaController");
 const router = (0, express_1.Router)();
-router.get('/completa', (req, res) => {
-    (0, provaController_1.obterProvaCompleta)(req, res);
-});
+// router.get('/:provaId/completa', (req, res) => {
+//     obterProvaCompleta(req, res)
+// });
 router.get('/', provaController_1.obterProvas);
 router.post('/', (req, res) => {
     (0, provaController_1.criarProva)(req, res);

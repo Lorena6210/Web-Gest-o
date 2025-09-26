@@ -46,6 +46,41 @@ export interface Deletar {
   message: string;
   deletedId: number;
 }
+// lib/provaApi.ts
+export interface NotaProva {
+  Id: number;
+  Id_Aluno: number;
+  NomeAluno: string;
+  Id_Turma: number;
+  Id_Bimestre: number;
+  Valor: number; // Changed the type to 'number'
+  NomeBimestre: string;
+  IdProva: number;
+  TituloProva: string;
+  Id_Professor: number;
+  NomeProfessor: string;
+  Id_Disciplina: number;
+  NomeDisciplina: string;
+  ProvaIdTurma: number;
+  NomeTurma: string;
+  ProvaIdBimestre: number;
+}
+
+export interface Prova {
+  Id: number;
+  Titulo: string;
+  Id_Turma: number;
+  Id_Bimestre: number;
+  Id_Professor: number;
+  Id_Disciplina: number;
+}
+
+export const fetchNotasProva = async (idProva: number, id?: number): Promise<NotaProva[]> => {
+  const response = await fetch(
+    `http://localhost:3001/notas/prova/${idProva}/notas?bimestre=${id}`
+  );
+  return response.json();
+};
 
 export const fetchProvasCompleto = async (idTurma: number): Promise<Prova[]> => {
   const response = await fetch(`http://localhost:3001/provas/turma/${idTurma}`);
@@ -96,12 +131,6 @@ export const fetchDeletarProva = async (id: number): Promise<Deletar> => {
 export const fetchDetalhesProva = async (id: number): Promise<DetalhesProva> => {
   const response = await fetch(`http://localhost:3001/provas/${id}/detalhes`);
   if (!response.ok) throw new Error("Erro ao buscar detalhes da prova");
-  return response.json();
-}
-
-export const fetchNotasProva = async (idProva: number): Promise<NotaProva[]> => {
-  const response = await fetch(`http://localhost:3001/notas/prova/${idProva}`);
-  if (!response.ok) throw new Error("Erro ao buscar notas da prova");
   return response.json();
 }
 
