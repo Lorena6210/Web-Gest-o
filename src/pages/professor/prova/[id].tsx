@@ -3,7 +3,7 @@ import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmasDoProfessor } from "@/lib/TurmaApi";
 import { TurmaCompleta } from "@/Types/Turma";
 import ProfessorPageComponent from "@/components/Professores/ProfessorPage";
-import { Prova, fetchProvasCompleto, NotaProva, fetchNotasProva } from "@/lib/provaApi";
+import { NotaProva, fetchNotasProva } from "@/lib/provaApi";
 
 interface Usuario {
   Nome: string;
@@ -14,31 +14,31 @@ interface Usuario {
 interface Props {
   usuario: Usuario;
   turmas: TurmaCompleta[];
-  provasPorTurma: Record<number, Prova[]>;
   notasProvas: NotaProva[];
 }
 
 export default function ProfessorPageContainer({
   usuario,
   turmas,
-  provasPorTurma,
   notasProvas,
 }: Props) {
   return (
     <ProfessorPageComponent
       usuario={usuario}
       turmas={turmas}
-      provasPorTurma={provasPorTurma}
+      provasPorTurma={{}} // vazio, pois não usamos provas
       notasProvas={notasProvas}
     />
   );
 }
-
-export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-  const { id } = context.query;
+export const getServerSideProps: GetServerSideProps<Props> = async (
+  context
+) => {
+  const { id, idProva } = context.query;
   const idNum = Number(id);
+  const idProvaNum = Number(idProva);
 
-  if (!id || isNaN(idNum)) {
+  if (!id || isNaN(idNum) || !idProva || isNaN(idProvaNum)) {
     return { notFound: true };
   }
 
@@ -53,21 +53,18 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
   // Buscar as turmas do professor
   const turmas = await fetchTurmasDoProfessor(idNum);
 
-  // Buscar as provas de cada turma
-  const provasPorTurma: Record<number, Prova[]> = {};
-  for (const turma of turmas) {
-    const provas = await fetchProvasCompleto(turma.Id);
-    provasPorTurma[turma.Id] = provas;
+  // Buscar notas da prova, tratando erro caso a API não retorne JSON
+  let notasProvas: NotaProva[] = [];
+  try {
+    notasProvas = await fetchNotasProva(idProvaNum);
+  } catch (error) {
+    console.error("Erro ao buscar notas da prova:", error);
   }
-
-  // Buscar todas as notas das provas
-  const notasProvas: NotaProva[] = await fetchNotasProva(idNum);
 
   return {
     props: {
       usuario,
       turmas,
-      provasPorTurma,
       notasProvas,
     },
   };

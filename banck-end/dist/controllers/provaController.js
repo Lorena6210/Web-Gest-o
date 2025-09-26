@@ -12,172 +12,41 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.obterProvasPorDisciplina = exports.obterProvasPorTurma = exports.obterProvas = exports.deletarProva = exports.atualizarProva = exports.criarNotaProva = exports.criarProva = exports.obterNotasProva = exports.obterProvaCompleta = void 0;
+exports.obterProvasPorDisciplina = exports.obterProvasPorTurma = exports.obterProvas = exports.deletarProva = exports.atualizarProva = exports.criarNotaProva = exports.criarProva = exports.obterNotasProva = void 0;
 const db_1 = __importDefault(require("../db"));
-const boletimController_1 = require("./boletimController"); // Ajuste o caminho conforme sua estrutura
-// GET - Obter prova completa por ID (todas as informações relacionadas) - VERSÃO CORRIGIDA SEM 'ANY'
-const obterProvaCompleta = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const idBimestre = req.query.bimestre ? Number(req.query.bimestre) : null;
-    let sql = `
-    SELECT 
-      pr.Id AS id,
-      pr.Titulo AS titulo,
-      pr.Descricao AS descricao,
-      pr.DataCriacao AS dataCriacao,
-      pr.DataEntrega AS dataEntrega,
-      pr.Id_Bimestre AS idBimestre,
-      b.Nome AS nomeBimestre,
-      b.DataInicio AS dataInicioBimestre,
-      b.DataFim AS dataFimBimestre,
-      b.Status AS statusBimestre,
-      -- Professor completo
-      p.Id AS professor_id,
-      p.Nome AS professor_nome,
-      p.Email AS professor_email,
-      p.Telefone AS professor_telefone,
-      p.Status AS professor_status,
-      p.FormacaoAcademica AS professor_formacao,
-      -- Turma completa
-      t.Id AS turma_id,
-      t.Nome AS turma_nome,
-      t.Serie AS turma_serie,
-      t.AnoLetivo AS turma_anoLetivo,
-      t.Turno AS turma_turno,
-      t.Sala AS turma_sala,
-      t.CapacidadeMaxima AS turma_capacidadeMaxima,
-      t.Status AS turma_status,
-      -- Disciplina completa
-      d.Id AS disciplina_id,
-      d.Nome AS disciplina_nome,
-      d.Codigo AS disciplina_codigo,
-      d.Ementa AS disciplina_ementa,
-      d.CargaHoraria AS disciplina_cargaHoraria,
-      d.PreRequisitos AS disciplina_preRequisitos
-    FROM Prova pr
-    JOIN Professor p ON pr.Id_Professor = p.Id
-    JOIN Turma t ON pr.Id_Turma = t.Id
-    JOIN Disciplina d ON pr.Id_Disciplina = d.Id
-    JOIN Bimestre b ON pr.Id_Bimestre = b.Id
-    WHERE pr.Id = ?
-  `;
-    const params = []; // Tipado como array de number/string
-    if (idBimestre) {
-        sql += ` AND pr.Id_Bimestre = ?`;
-        params.push(idBimestre);
-    }
-    try {
-        // Query principal tipada (estende RowDataPacket para os campos customizados)
-        const [provaRows] = yield db_1.default.promise().query(sql, params);
-        if (provaRows.length === 0) {
-            return res.status(404).json({ error: 'Prova não encontrada' });
-        }
-        const provaBase = provaRows[0]; // Cast seguro para ProvaCompleta (sem campos aninhados ainda)
-        // Buscar notas associadas (query tipada com interface NotaProva)
-        const notasSql = `
-      SELECT n.Id, n.Id_Aluno AS idAluno, a.Nome AS nomeAluno, n.Valor, n.Id_Bimestre
-      FROM Nota n
-      JOIN Aluno a ON n.Id_Aluno = a.Id
-      WHERE n.Id_Prova = ? ${idBimestre ? 'AND n.Id_Bimestre = ?' : ''}
-      ORDER BY a.Nome
-    `;
-        const notasParams = [];
-        if (idBimestre) {
-            notasParams.push(idBimestre);
-        }
-        const [notasRows] = yield db_1.default.promise().query(notasSql, notasParams);
-        // Buscar resumo de boletim (query tipada com interface BoletimResumo)
-        const boletimSql = `
-      SELECT bo.Id_Aluno, al.Nome AS nomeAluno, bo.MediaFinal, bo.Situacao, bo.Observacoes, bo.Frequencia
-      FROM Boletim bo
-      JOIN Aluno al ON bo.Id_Aluno = al.Id
-      WHERE bo.Id_Disciplina = ? AND bo.Id_Bimestre = ? AND al.Id IN (
-        SELECT Id_Aluno FROM Aluno_Turma WHERE Id_Turma = ?
-      )
-      ORDER BY al.Nome
-    `;
-        const [boletimRows] = yield db_1.default.promise().query(boletimSql, [
-            provaBase.disciplina_id,
-            provaBase.idBimestre,
-            provaBase.turma_id
-        ]);
-        // Buscar total de faltas (query tipada com interface FaltasResumo)
-        const faltasSql = `
-      SELECT COUNT(*) AS totalFaltas
-      FROM Falta f
-      JOIN Bimestre b ON f.DataFalta BETWEEN b.DataInicio AND b.DataFim
-      WHERE f.Id_Turma = ? AND f.Id_Disciplina = ? AND b.Id = ?
-    `;
-        const [faltasRows] = yield db_1.default.promise().query(faltasSql, [
-            provaBase.turma_id,
-            provaBase.disciplina_id,
-            provaBase.idBimestre
-        ]);
-        const totalFaltas = faltasRows.length > 0 ? faltasRows[0].totalFaltas : 0;
-        // Construir objeto completo com tipagem (sem 'any')
-        const provaCompleta = Object.assign(Object.assign({}, provaBase), { professor: {
-                id: Number(provaBase.professor_id || 0),
-                nome: String(provaBase.professor_nome || ''),
-                email: String(provaBase.professor_email || ''),
-                telefone: String(provaBase.professor_telefone || ''),
-                status: String(provaBase.professor_status || ''),
-                formacaoAcademica: String(provaBase.professor_formacao || ''),
-            }, turma: {
-                id: Number(provaBase.turma_id || 0),
-                nome: String(provaBase.turma_nome || ''),
-                serie: String(provaBase.turma_serie || ''),
-                anoLetivo: Number(provaBase.turma_anoLetivo || 0),
-                turno: String(provaBase.turma_turno || ''),
-                sala: String(provaBase.turma_sala || ''),
-                capacidadeMaxima: Number(provaBase.turma_capacidadeMaxima || 0),
-                status: String(provaBase.turma_status || ''),
-            }, disciplina: {
-                id: Number(provaBase.disciplina_id || 0),
-                nome: String(provaBase.disciplina_nome || ''),
-                codigo: String(provaBase.disciplina_codigo || ''),
-                ementa: String(provaBase.disciplina_ementa || ''),
-                cargaHoraria: Number(provaBase.disciplina_cargaHoraria || 0),
-                preRequisitos: String(provaBase.disciplina_preRequisitos || ''),
-            }, notas: notasRows, boletimResumo: boletimRows, faltasResumo: Number(totalFaltas) });
-        res.json({
-            prova: provaCompleta,
-            filtroBimestre: idBimestre || 'Todos os bimestres',
-            totalAlunosComNotas: provaCompleta.notas.length,
-            totalFaltas: provaCompleta.faltasResumo,
-        });
-    }
-    catch (err) {
-        console.error('Erro ao buscar prova completa:', err);
-        res.status(500).json({ error: 'Erro ao buscar prova completa' });
-    }
-});
-exports.obterProvaCompleta = obterProvaCompleta;
-// GET - Obter notas de uma prova específica (expandido com mais info do aluno e média)
+const boletimController_1 = require("./boletimController"); // Ajuste o caminho conforme sua estrutura (importe do módulo de boletim)
+// GET - Obter notas de uma prova específica (com filtro por bimestre opcional via ?bimestre=1)
 const obterNotasProva = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { provaId } = req.params;
     const idBimestre = req.query.bimestre ? Number(req.query.bimestre) : null;
     let sql = `
     SELECT 
-      n.Id, n.Id_Aluno, a.Nome AS NomeAluno, a.Email AS EmailAluno, a.RA AS RAAluno,
-      n.Id_Turma, n.Id_Bimestre, n.Valor, b.Nome AS NomeBimestre,
-      -- Média da prova para este aluno (subquery simples)
-      (SELECT AVG(n2.Valor) FROM Nota n2 WHERE n2.Id_Prova = n.Id_Prova AND n2.Id_Aluno = n.Id_Aluno) AS MediaAlunoProva
+      n.Id, n.Id_Aluno, a.Nome AS NomeAluno, n.Id_Turma, n.Id_Bimestre, n.Valor, 
+      b.Nome AS NomeBimestre,
+      p.Id AS IdProva, p.Titulo AS TituloProva, p.Id_Professor, prof.Nome AS NomeProfessor,
+      p.Id_Disciplina, d.Nome AS NomeDisciplina, p.Id_Turma AS ProvaIdTurma, t.Nome AS NomeTurma,
+      p.Id_Bimestre AS ProvaIdBimestre
     FROM Nota n
     JOIN Aluno a ON n.Id_Aluno = a.Id
     JOIN Bimestre b ON n.Id_Bimestre = b.Id
+    JOIN Prova p ON n.Id_Prova = p.Id
+    LEFT JOIN Professor prof ON p.Id_Professor = prof.Id
+    LEFT JOIN Disciplina d ON p.Id_Disciplina = d.Id
+    LEFT JOIN Turma t ON p.Id_Turma = t.Id
     WHERE n.Id_Prova = ?
   `;
-    const params = [Number(provaId)];
+    const params = [Number(provaId)]; // Garantir que provaId seja número
     if (idBimestre) {
         sql += ` AND n.Id_Bimestre = ?`;
         params.push(idBimestre);
     }
-    sql += ` ORDER BY n.Id_Bimestre, a.Nome`;
+    sql += ` ORDER BY n.Id_Bimestre, a.Nome`; // Ordenar por bimestre e nome do aluno
     try {
         const [results] = yield db_1.default.promise().query(sql, params);
         res.json({
             notas: results,
             filtroBimestre: idBimestre || 'Todos os bimestres',
-            totalNotas: results.length,
+            totalNotas: results.length
         });
     }
     catch (err) {
@@ -186,9 +55,9 @@ const obterNotasProva = (req, res) => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.obterNotasProva = obterNotasProva;
-// POST - Criar prova (mantido, mas com validação expandida para grade se aplicável)
+// POST - Criar prova (Id_Bimestre obrigatório)
 const criarProva = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { Titulo, Descricao, DataCriacao, DataEntrega, Id_Professor, Id_Turma, Id_Disciplina, EnvioProva, Id_Bimestre, Id_GradeDisciplina } = req.body;
+    const { Titulo, Descricao, DataCriacao, DataEntrega, Id_Professor, Id_Turma, Id_Disciplina, EnvioProva, Id_Bimestre } = req.body;
     if (!Titulo || !DataCriacao || !Id_Professor || !Id_Turma || !Id_Disciplina || !Id_Bimestre) {
         return res.status(400).json({ error: 'Campos obrigatórios: Titulo, DataCriacao, Id_Professor, Id_Turma, Id_Disciplina, Id_Bimestre' });
     }
@@ -198,17 +67,10 @@ const criarProva = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         if (bimestreRows.length === 0) {
             return res.status(400).json({ error: 'Bimestre não encontrado' });
         }
-        // Verificar se Id_GradeDisciplina existe (se fornecido)
-        if (Id_GradeDisciplina) {
-            const [gradeRows] = yield db_1.default.promise().query(`SELECT Id FROM GradeDisciplina WHERE Id = ?`, [Id_GradeDisciplina]);
-            if (gradeRows.length === 0) {
-                return res.status(400).json({ error: 'GradeDisciplina não encontrada' });
-            }
-        }
         const sql = `
       INSERT INTO Prova 
-        (Titulo, Descricao, DataCriacao, DataEntrega, Id_Professor, Id_Turma, Id_Disciplina, EnvioProva, Id_Bimestre, Id_GradeDisciplina)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (Titulo, Descricao, DataCriacao, DataEntrega, Id_Professor, Id_Turma, Id_Disciplina, EnvioProva, Id_Bimestre)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
         const [result] = yield db_1.default.promise().query(sql, [
             Titulo,
@@ -219,15 +81,9 @@ const criarProva = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             Id_Turma,
             Id_Disciplina,
             EnvioProva || null,
-            Id_Bimestre,
-            Id_GradeDisciplina || null // Opcional
+            Id_Bimestre
         ]);
-        res.status(201).json({
-            message: 'Prova criada com sucesso no bimestre informado',
-            id: result.insertId,
-            idBimestre: Id_Bimestre,
-            idGradeDisciplina: Id_GradeDisciplina || 'Não especificada'
-        });
+        res.status(201).json({ message: 'Prova criada com sucesso no bimestre informado', id: result.insertId, idBimestre: Id_Bimestre });
     }
     catch (err) {
         console.error('Erro ao criar prova:', err);
@@ -235,7 +91,7 @@ const criarProva = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
     }
 });
 exports.criarProva = criarProva;
-// POST - Criar nota para uma prova (mantido, com chamada para boletim)
+// POST - Criar nota para uma prova (com verificação de bimestre)
 const criarNotaProva = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { Id_Aluno, Id_Turma, Id_Bimestre, Id_Prova, Valor } = req.body;
     if (!Id_Aluno || !Id_Turma || !Id_Bimestre || !Id_Prova || Valor === undefined) {
@@ -257,11 +113,7 @@ const criarNotaProva = (req, res) => __awaiter(void 0, void 0, void 0, function*
         const [result] = yield db_1.default.promise().query(sql, [Id_Aluno, Id_Turma, Id_Bimestre, Id_Prova, Valor]);
         // Atualizar boletim por bimestre
         yield (0, boletimController_1.atualizarBoletim)(Id_Aluno, idDisciplina, Id_Bimestre);
-        res.status(201).json({
-            message: 'Nota de prova criada com sucesso no bimestre informado',
-            id: result.insertId,
-            idBimestre: Id_Bimestre
-        });
+        res.status(201).json({ message: 'Nota de prova criada com sucesso no bimestre informado', id: result.insertId, idBimestre: Id_Bimestre });
     }
     catch (err) {
         console.error('Erro ao criar nota de prova:', err);
@@ -269,11 +121,10 @@ const criarNotaProva = (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.criarNotaProva = criarNotaProva;
-// PUT - Atualizar prova (corrigido: construção dinâmica de params para evitar splice incorreto)
+// PUT - Atualizar prova (suporte a Id_Bimestre opcional)
 const atualizarProva = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { Titulo, Descricao, DataEntrega, Id_Professor, Id_Turma, Id_Disciplina, Id_Bimestre, Id_GradeDisciplina } = req.body;
+    const { Titulo, Descricao, DataEntrega, Id_Professor, Id_Turma, Id_Disciplina, Id_Bimestre } = req.body;
     if (!Titulo || !Id_Professor || !Id_Turma || !Id_Disciplina) {
         return res.status(400).json({ error: 'Campos obrigatórios: Titulo, Id_Professor, Id_Turma, Id_Disciplina' });
     }
