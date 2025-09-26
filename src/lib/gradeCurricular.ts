@@ -39,10 +39,16 @@ export interface Disciplina {
 
 // Buscar todas as grades curriculares
 export const fetchGradesCurriculares = async (): Promise<GradeCurricular[]> => {
-  const res = await fetch("http://localhost:3001/grade-curricular");
-  if (!res.ok) throw new Error("Erro ao buscar grades curriculares");
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
+ const response = await fetch("http://localhost:3001/grade-curricular", {
+    method: "GET", // Corrigido
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) throw new Error("Erro ao buscar Grade Curricular"); // Corrigida a mensagem de erro
+
+  return response.json();
 };
 
 

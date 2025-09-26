@@ -27,7 +27,6 @@ interface Disciplina {
   Codigo: string;
   Nome: string;
   CargaHoraria: number;
-  Semestre: number;
   Bimestre: number;
   Descricao?: string;
   Id_Turma: number;
@@ -39,16 +38,14 @@ interface Props {
     Id: number;
     Tipo: string;
   };
-  turmas: Turma[]; // turmas do professor passadas separadas
+  turmas: Turma[];
   grades: (GradeCurricular & { Disciplinas: Disciplina[] })[];
-  tipoAgrupamento: "semestre" | "bimestre"; // controla o agrupamento
 }
 
 export default function ProfessorGradeCurricular({
   usuario,
   turmas,
   grades,
-  tipoAgrupamento,
 }: Props) {
   const handleAtualizarDisciplina = (
     gradeId: number,
@@ -56,9 +53,7 @@ export default function ProfessorGradeCurricular({
   ) => {
     const novoNome = prompt("Novo nome da disciplina:", disciplina.Nome);
     if (novoNome) {
-      console.log(
-        `Atualizada disciplina ${disciplina.Codigo} para ${novoNome}`
-      );
+      console.log(`Atualizada disciplina ${disciplina.Codigo} para ${novoNome}`);
     }
   };
 
@@ -73,7 +68,7 @@ export default function ProfessorGradeCurricular({
       <Navbar usuario={usuario} />
       <Box sx={{ mb: 3, mt: 2, marginLeft: "320px", paddingRight: "40px" }}>
         <Typography variant="h5" gutterBottom>
-          Grades Curriculares
+          Grades Curriculares por Bimestre
         </Typography>
 
         {grades.map((grade) => {
@@ -81,7 +76,6 @@ export default function ProfessorGradeCurricular({
 
           if (disciplinas.length === 0) return null;
 
-          // Agrupar disciplinas por turma
           const turmasIds = Array.from(
             new Set(disciplinas.map((d) => d.Id_Turma))
           ).sort();
@@ -91,18 +85,12 @@ export default function ProfessorGradeCurricular({
               (d) => d.Id_Turma === turmaId
             );
 
-            // Buscar a turma pelo array de turmas recebido via props
             const turma = turmas.find((t) => t.Id === turmaId);
             const nomeTurma = turma?.Nome || `Turma ${turmaId}`;
             const serieTurma = turma?.Serie || "-";
 
-            // Agrupar pelo tipo selecionado (semestre ou bimestre)
-            const grupos = Array.from(
-              new Set(
-                disciplinasDaTurma.map((d) =>
-                  tipoAgrupamento === "semestre" ? d.Semestre : d.Bimestre
-                )
-              )
+            const bimestres = Array.from(
+              new Set(disciplinasDaTurma.map((d) => d.Bimestre))
             ).sort();
 
             return (
@@ -116,22 +104,17 @@ export default function ProfessorGradeCurricular({
 
                 <Divider sx={{ my: 2 }} />
 
-                {grupos.map((grupo) => {
+                {bimestres.map((bimestre) => {
                   const disciplinasFiltradas = disciplinasDaTurma.filter(
-                    (d) =>
-                      (tipoAgrupamento === "semestre"
-                        ? d.Semestre
-                        : d.Bimestre) === grupo
+                    (d) => d.Bimestre === bimestre
                   );
 
                   if (disciplinasFiltradas.length === 0) return null;
 
                   return (
-                    <Box key={grupo} sx={{ mt: 2 }}>
+                    <Box key={bimestre} sx={{ mt: 2 }}>
                       <Typography variant="subtitle1" sx={{ mb: 1 }}>
-                        {tipoAgrupamento === "semestre"
-                          ? `${grupo}º Semestre`
-                          : `${grupo}º Bimestre`}
+                        {bimestre}º Bimestre
                       </Typography>
 
                       <Table size="small">
@@ -139,7 +122,7 @@ export default function ProfessorGradeCurricular({
                           <TableRow>
                             <TableCell>Código</TableCell>
                             <TableCell>Disciplina</TableCell>
-                            <TableCell>Título</TableCell>
+                            <TableCell>Descrição</TableCell>
                             <TableCell>Carga Horária</TableCell>
                             <TableCell>Ações</TableCell>
                           </TableRow>
@@ -149,9 +132,7 @@ export default function ProfessorGradeCurricular({
                             <TableRow key={disciplina.Codigo}>
                               <TableCell>{disciplina.Codigo}</TableCell>
                               <TableCell>{disciplina.Nome}</TableCell>
-                              <TableCell>
-                                {disciplina.Descricao || "-"}
-                              </TableCell>
+                              <TableCell>{disciplina.Descricao || "-"}</TableCell>
                               <TableCell>{disciplina.CargaHoraria}</TableCell>
                               <TableCell>
                                 <Button
@@ -192,13 +173,7 @@ export default function ProfessorGradeCurricular({
                         variant="outlined"
                         sx={{ mt: 1 }}
                         onClick={() =>
-                          alert(
-                            `Cadastrar disciplina no ${grupo}${
-                              tipoAgrupamento === "semestre"
-                                ? "º semestre"
-                                : "º bimestre"
-                            }`
-                          )
+                          alert(`Cadastrar disciplina no ${bimestre}º bimestre`)
                         }
                       >
                         Cadastrar Disciplina
