@@ -1,6 +1,7 @@
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmasDoProfessor } from '@/lib/TurmaApi';
+import { fetchNotas } from '@/lib/NotasApi';
 import { fetchAtividades } from '@/lib/atividadeApi'
 import { TurmaCompleta } from '@/Types/Turma';
 import ProfessorAtividadePageComponentI from "@/components/Professores/atividade";
@@ -28,27 +29,35 @@ interface Props {
   turmas: TurmaCompleta[];
   atividades: Atividade[];
 }
-
-export default function ProfessorPageContainer({ usuario, turmas, atividades }: Props) {
-  return <ProfessorAtividadePageComponentI usuario={usuario} turmas={turmas} atividades={atividades} />;
+export default function ProfessorPageContainer({ usuario, turmas, atividades, notas }: Props) {
+  return (
+    <ProfessorAtividadePageComponentI
+      usuario={usuario}
+      turmas={turmas}
+      atividades={atividades}
+      notas={notas} // <-- passar para o componente se ele precisar
+    />
+  );
 }
+
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
   const { id } = context.query;
   const idNum = Number(id);
 
-  if (!id || isNaN(idNum)) {
-    return { notFound: true };
-  }
+  if (!id || isNaN(idNum)) return { notFound: true };
 
   const usuarios = await fetchUsuarios();
   const usuario = usuarios.professores?.find((u: Usuario) => u.Id === idNum);
 
   const turmas = await fetchTurmasDoProfessor(idNum);
-
   const atividadesResponse = await fetchAtividades(idNum);
+
   const atividadesArray: Atividade[] = Array.isArray(atividadesResponse)
     ? atividadesResponse
     : atividadesResponse?.atividades || [];
+
+  // Buscar notas
+  const notas = await fetchNotas();
 
   return {
     props: {
@@ -65,6 +74,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
         disciplina: atividade.disciplina ?? '',
         turmaId: atividade.turmaId ?? null,
       })),
+      notas, // inclui aqui
     },
   };
 };

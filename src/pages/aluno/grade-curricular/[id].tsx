@@ -2,7 +2,7 @@ import { GetServerSideProps } from "next";
 import AlunoGradeCurricular from "@/components/Aluno/gradeCurricular";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmaCompleta } from '@/lib/TurmaApi';
-import { fetchDisciplinasPorGrade, GradeCurricular } from "@/lib/gradeCurricular";
+import { fetchGradesCurriculares, GradeCurricular } from "@/lib/gradeCurricular";
 import { TurmaCompleta } from "@/Types/Turma";
 
 interface Usuario {
@@ -55,13 +55,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
   const disciplinas = idGrade ? await fetchDisciplinasPorGrade(idGrade) : [];
 
   // Retornar disciplinas como "gradeCurricular"
-  const gradeCurricular: GradeCurricular[] = [
-    {
-      Id_GradeCurricular: idGrade,
-      Descricao_Grade: turma.Descricao_Grade || "Grade Curricular",
-      Disciplinas: disciplinas,
-    },
-  ];
+   const gradeCurricular = await fetchGradesCurriculares();
 
   return {
     props: {

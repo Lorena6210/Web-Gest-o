@@ -1,78 +1,144 @@
-import React, { useMemo } from "react";
+import React from "react";
+import {
+  Box,
+  Typography,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Paper,
+  Divider,
+} from "@mui/material";
 import Navbar from "../Navbar";
-import { Box } from "@mui/material";
-import { GradeCurricular, Professor } from "@/lib/gradeCurricular";
-import { Disciplina } from '../../../components/Gestores/TurmaCard';
+import { GradeCurricular } from "@/lib/gradeCurricular";
+
+interface Turma {
+  Id: number;
+  Nome: string;
+  Serie: string;
+  AnoLetivo: number;
+  Turno: string;
+  Sala: string;
+}
+
+interface Disciplina {
+  Codigo: string;
+  Nome: string;
+  CargaHoraria: number;
+  Bimestre: number;
+  Descricao?: string;
+  Id_Turma: number;
+}
 
 interface Usuario {
-  Nome: string;
   Id: number;
+  Nome: string;
+  Tipo: string;
+}
+
+interface Professor {
+  Id: number;
+  Nome: string;
+  Email: string;
+  Telefone?: string;
 }
 
 interface Props {
-  usuario: Usuario[];
-  gradeCurricular: GradeCurricular[];
+  usuario: Usuario;
+  turmas: Turma[];
+  gradeCurricular: (GradeCurricular & { Disciplinas: Disciplina[] })[];
   disciplinas: Disciplina[];
   professores: Professor[];
 }
 
-const TabelaDisciplinas: React.FC<{ disciplinas: GradeCurricular[] }> = ({ disciplinas }) => (
-  <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 10 }}>
-    <thead style={{ backgroundColor: "#1976d2", color: "white" }}>
-      <tr>
-        <th style={{ padding: 8, textAlign: "center" }}>Código</th>
-        <th style={{ padding: 8 }}>Disciplina</th>
-        <th style={{ padding: 8, textAlign: "center" }}>Crédito</th>
-        <th style={{ padding: 8, textAlign: "center" }}>Professor</th>
-      </tr>
-    </thead>
-    <tbody>
-      {disciplinas.map((grade) => (
-        <tr key={grade.Id_Disciplina} style={{ borderBottom: "1px solid #ddd" }}>
-          <td style={{ padding: 8, textAlign: "center" }}>{grade.Codigo_Disciplina}</td>
-          <td style={{ padding: 8 }}>{grade.Nome_Disciplina}</td>
-          <td style={{ padding: 8, textAlign: "center" }}>{grade.Credito ?? "-"}</td>
-          <td style={{ padding: 8 }}>{grade.Nome_Professor}</td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-);
-
-export default function GestorGradeCurricular({ usuario, gradeCurricular }: Props) {
-  // Agrupa os semestres e ordena
-  const semestres = useMemo(() => {
-    return Array.from(new Set(gradeCurricular.map((g) => g.Semestre))).sort((a, b) => a - b);
-  }, [gradeCurricular]);
-
+export default function GestorGradeCurricular({
+  usuario,
+  turmas,
+  gradeCurricular,
+}: Props) {
   return (
-    <Box p={3}>
+    <Box>
       <Navbar usuario={usuario} />
+      <Box sx={{ mb: 3, mt: 2, marginLeft: "320px", paddingRight: "40px" }}>
+        <Typography variant="h5" gutterBottom>
+          Grades Curriculares por Bimestre
+        </Typography>
 
-      <Box sx={{ maxWidth: 800, mb: 3, margin: "0 auto" }}>
-        <h2>Grade Curricular (Visualização)</h2>
+        {gradeCurricular?.map((grade) => {
+          const disciplinas = grade.Disciplinas || [];
+
+          if (disciplinas.length === 0) return null;
+
+          const turmasIds = Array.from(
+            new Set(disciplinas.map((d) => d.Id_Turma))
+          ).sort();
+
+          return turmasIds.map((turmaId) => {
+            const disciplinasDaTurma = disciplinas.filter(
+              (d) => d.Id_Turma === turmaId
+            );
+
+            const turma = turmas?.find((t) => t.Id === turmaId);
+            const nomeTurma = turma?.Nome || `Turma ${turmaId}`;
+            const serieTurma = turma?.Serie || "-";
+
+            const bimestres = Array.from(
+              new Set(disciplinasDaTurma.map((d) => d.Bimestre))
+            ).sort();
+
+            return (
+              <Paper
+                key={`${grade.Id_GradeCurricular}-${turmaId}`}
+                sx={{ mb: 4, p: 2 }}
+              >
+                <Typography variant="h6" gutterBottom>
+                  {grade.Descricao_Grade} - {nomeTurma} ({serieTurma})
+                </Typography>
+
+                <Divider sx={{ my: 2 }} />
+
+                {bimestres.map((bimestre) => {
+                  const disciplinasFiltradas = disciplinasDaTurma.filter(
+                    (d) => d.Bimestre === bimestre
+                  );
+
+                  if (disciplinasFiltradas.length === 0) return null;
+
+                  return (
+                    <Box key={bimestre} sx={{ mt: 2 }}>
+                      <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                        {bimestre}º Bimestre
+                      </Typography>
+
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Código</TableCell>
+                            <TableCell>Disciplina</TableCell>
+                            <TableCell>Descrição</TableCell>
+                            <TableCell>Carga Horária</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {disciplinasFiltradas.map((disciplina) => (
+                            <TableRow key={disciplina.Codigo}>
+                              <TableCell>{disciplina.Codigo}</TableCell>
+                              <TableCell>{disciplina.Nome}</TableCell>
+                              <TableCell>{disciplina.Descricao || "-"}</TableCell>
+                              <TableCell>{disciplina.CargaHoraria}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </Box>
+                  );
+                })}
+              </Paper>
+            );
+          });
+        })}
       </Box>
-
-      {semestres.map((semestre) => {
-        const disciplinasDoSemestre = gradeCurricular.filter((g) => g.Semestre === semestre);
-        return (
-          <Box key={semestre} sx={{ mb: 4, maxWidth: 800, margin: "0 auto" }}>
-            <h3
-              style={{
-                backgroundColor: "#1976d2",
-                color: "white",
-                padding: "8px",
-                borderRadius: "4px",
-                userSelect: "none",
-              }}
-            >
-              {semestre}º Semestre
-            </h3>
-
-            <TabelaDisciplinas disciplinas={disciplinasDoSemestre} />
-          </Box>
-        );
-      })}
     </Box>
   );
 }

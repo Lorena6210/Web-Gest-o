@@ -75,6 +75,22 @@ export interface Prova {
   Id_Disciplina: number;
 }
 
+
+
+// Buscar todas as grades curriculares
+export const fetchGetProva = async (): Promise<Prova[]> => {
+ const response = await fetch("http://localhost:3001/provas", {
+    method: "GET", // Corrigido
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) throw new Error("Erro ao buscar Provas"); // Corrigida a mensagem de erro
+
+  return response.json();
+};
+
 export const fetchNotasProva = async (idProva: number, id?: number): Promise<NotaProva[]> => {
   const response = await fetch(
     `http://localhost:3001/notas/prova/${idProva}/notas?bimestre=${id}`
