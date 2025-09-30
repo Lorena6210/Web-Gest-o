@@ -1,34 +1,49 @@
+// pages/responsavel/[id]/grade-curricular.tsx
+
 import { GetServerSideProps } from "next";
-import AlunoGradeCurricular from "@/components/Aluno/gradeCurricular";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
-import { fetchTurmaCompleta } from '@/lib/TurmaApi';
+import { fetchTurmaCompleta, TurmaCompleta } from "@/lib/TurmaApi";
 import { fetchGradesCurriculares, GradeCurricular } from "@/lib/gradeCurricular";
-import { TurmaCompleta } from "@/Types/Turma";
-import { fetchDisciplinas, Disciplina } from "@/lib/disciplinaApi";
+import { fetchDisciplinas } from "@/lib/disciplinaApi";
+import { fetchProfessores } from "@/lib/ProfessorApi";
+import { Disciplina } from "@/components/Gestores/TurmaCard"; // ou ajuste o caminho
+import ResponsavelGradeCurricularPage from "@/components/responsavel/gradeCurricular";
 
 interface Usuario {
   Id: number;
   Nome: string;
-  Email: string;
   Tipo: string;
-  Turmas: TurmaCompleta[];
+}
+
+interface Professor {
+  Id: number;
+  Nome: string;
+  Email: string;
+  Telefone?: string;
 }
 
 interface Props {
   usuario: Usuario;
   turmas: TurmaCompleta[];
-  gradeCurricular: GradeCurricular[];
+  gradeCurricular: (GradeCurricular & { Disciplinas: Disciplina[] })[];
+  disciplinas: Disciplina[];
+  professores: Professor[];
 }
 
-export default function AlunoPage({ usuario, turmas, gradeCurricular }: Props) {
-  const idTurma = turmas.length > 0 ? turmas[0].Id : 0;
-
+export default function ResponsavelGradeCurricularContainer({
+  usuario,
+  turmas,
+  gradeCurricular,
+  disciplinas,
+  professores,
+}: Props) {
   return (
-    <AlunoGradeCurricular
+    <ResponsavelGradeCurricularPage
       usuario={usuario}
       turmas={turmas}
-      grades={gradeCurricular}
-      idTurma={idTurma}
+      gradeCurricular={gradeCurricular}
+      disciplinas={disciplinas}
+      professores={professores}
     />
   );
 }
@@ -37,23 +52,25 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
   const { id } = context.query;
   const idNum = Number(id);
 
-  if (!id || isNaN(idNum)) return { notFound: true };
+  if (isNaN(idNum)) return { notFound: true };
 
-  // Buscar aluno
+  // Buscar o usuário responsável
   const usuarios = await fetchUsuarios();
-  const usuario = usuarios.alunos?.find((u: Usuario) => u.Id === idNum);
+  const usuario = usuarios.responsaveis?.find((u: Usuario) => u.Id === idNum);
+
   if (!usuario) return { notFound: true };
 
-  // Buscar turmas do aluno
+  // Buscar turmas dos filhos
   const turmas = await fetchTurmaCompleta(idNum);
-  const turmasCompletas = turmas ? [turmas] : [];
+  const turmasArray = Array.isArray(turmas) ? turmas : [];
 
   // Buscar dados auxiliares
   const disciplinas = await fetchDisciplinas();
+  const professores = await fetchProfessores();
   const rawGrades = await fetchGradesCurriculares();
 
   // Agrupar disciplinas por grade curricular
-  const gradeMap = new Map<number, GradeCurricular & { Disciplinas: Disciplina[] }>();
+  const gradeMap = new Map<number, (GradeCurricular & { Disciplinas: Disciplina[] })>();
 
   rawGrades.forEach((g) => {
     const disciplina: Disciplina = {
@@ -80,16 +97,15 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
     }
   });
 
-  const gradeCurricular = Array.from(gradeMap.values()).map((g) => ({
-    ...g,
-    Disciplinas: g.Disciplinas || [],
-  }));
+  const gradeCurricular = Array.from(gradeMap.values());
 
   return {
     props: {
       usuario,
-      turmas: turmasCompletas,
+      turmas: turmasArray,
       gradeCurricular,
+      disciplinas,
+      professores,
     },
   };
 };

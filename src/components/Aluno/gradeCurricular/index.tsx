@@ -26,6 +26,7 @@ interface Disciplina {
   Codigo: string;
   Nome: string;
   CargaHoraria: number;
+  Semestre: number;
   Bimestre: number;
   Descricao?: string;
   Id_Turma: number;
@@ -52,8 +53,8 @@ interface Props {
   professores: Professor[];
 }
 
-export default function GestorGradeCurricular({
-  usuario,
+export default function AlunoGradeCurricular({
+ usuario,
   turmas,
   gradeCurricular,
 }: Props) {

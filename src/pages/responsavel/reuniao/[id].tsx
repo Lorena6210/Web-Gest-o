@@ -1,10 +1,10 @@
-// pages/responsavel/[id].tsx
+// pages/responsavel/[id]/reunioes.tsx
 
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmaCompleta, TurmaCompleta } from "@/lib/TurmaApi";
-import { fetchEventosPorResponsavel, Evento } from "@/lib/EventosApi"; // suposição
-import ResponsavelPageComponent from "@/components/responsavel/ResponsavelPage";
+import { fetchReunioesPorResponsavel } from "@/lib/reuniaoApi";
+import ResponsavelReunioesPage from "@/components/responsavel/reunião";
 
 interface Usuario {
   Nome: string;
@@ -12,55 +12,59 @@ interface Usuario {
   Tipo: string;
 }
 
-interface ResponsavelPageProps {
-  usuario: Usuario;
-  turmas: TurmaCompleta[];
-  eventos: Evento[];
+interface Reuniao {
+  id: number;
+  titulo: string;
+  descricao: string;
+  data: string;
+  horario: string;
+  local: string;
+  turma: string;
+  participantes: string[];
 }
 
-export default function ResponsavelPageContainer({
-  usuario,
-  turmas,
-  eventos,
-}: ResponsavelPageProps) {
+interface Props {
+  usuario: Usuario;
+  turmas: TurmaCompleta[];
+  reunioes: Reuniao[];
+}
+
+export default function ResponsavelReunioesContainer({ usuario, turmas, reunioes }: Props) {
   return (
-    <ResponsavelPageComponent
+    <ResponsavelReunioesPage
       usuario={usuario}
       turmas={turmas}
-      eventos={eventos}
+      reunioes={reunioes}
     />
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
+export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
   const { id } = context.query;
   const idNum = Number(id);
 
-  // Buscar dados do usuário responsável
-  const usuarios = await fetchUsuarios();
-  const usuario = usuarios.responsaveis?.find((u: Usuario) => u.Id === idNum);
-
-  if (!usuario) {
+  if (!id || isNaN(idNum)) {
     return { notFound: true };
   }
 
-  // Buscar turmas do responsável
-  const turmas = await fetchTurmaCompleta(idNum);
+  // Buscar usuário
+  const usuarios = await fetchUsuarios();
+  const usuario = usuarios.responsaveis?.find((u: Usuario) => u.Id === idNum);
+  if (!usuario) return { notFound: true };
 
-  // Buscar eventos do responsável
-  let eventos: Evento[] = [];
-  try {
-    eventos = await fetchEventosPorResponsavel(idNum);
-  } catch (err) {
-    console.error("Erro ao buscar eventos do responsável:", err);
-    eventos = [];
-  }
+  // Buscar turmas dos filhos
+  const turmasResponse = await fetchTurmaCompleta(idNum);
+  const turmas: TurmaCompleta[] = Array.isArray(turmasResponse) ? turmasResponse : [];
+
+  // Buscar reuniões relacionadas ao responsável
+  const reunioesResponse = await fetchReunioesPorResponsavel(idNum);
+  const reunioes: Reuniao[] = Array.isArray(reunioesResponse) ? reunioesResponse : [];
 
   return {
     props: {
       usuario,
-      turmas: Array.isArray(turmas) ? turmas : [],
-      eventos,
+      turmas,
+      reunioes,
     },
   };
 };

@@ -1,11 +1,9 @@
-// components/responsavel/ResponsavelPage.tsx
+// components/responsavel/ResponsavelBoletimPage.tsx
 
 import React from "react";
-import Navbar from "../Navbar";
-import { Box, Typography, Table, TableHead, TableRow, TableCell, TableBody, Paper } from "@mui/material";
-import { TurmaCompleta } from "@/lib/TurmaApi"; 
-import { Aluno, Disciplina } from "@/lib/BoletimApi"; 
-import { Boletim } from "@/lib/BoletimApi";
+import { TurmaCompleta } from "@/lib/TurmaApi";
+import { Prova } from "@/lib/provaApi";
+import { NotaProva } from "@/lib/NotasApi";
 
 interface Usuario {
   Nome: string;
@@ -16,63 +14,69 @@ interface Usuario {
 interface Props {
   usuario: Usuario;
   turmas: TurmaCompleta[];
-  boletins: Boletim[];
+  provas: Prova[];
+  notas: NotaProva[];
 }
 
-export default function ResponsavelPageComponent({ usuario, turmas, boletins }: Props) {
-  // Pega lista de alunos do responsável
-  const alunos = turmas.flatMap(t => t.alunos || []);
+export default function ResponsavelBoletimPage({
+  usuario,
+  turmas,
+  provas,
+  notas,
+}: Props) {
+  // Agrupar notas por disciplina e bimestre
+  const boletimMap = new Map<string, { bimestre: number; notas: number[] }[]>();
+
+  provas.forEach((prova) => {
+    const nota = notas.find((n) => n.idProva === prova.id);
+    if (!nota) return;
+
+    const key = `${prova.disciplina}`;
+    const entry = boletimMap.get(key) || [];
+
+    const bimestreEntry = entry.find((e) => e.bimestre === prova.idBimestre);
+    if (bimestreEntry) {
+      bimestreEntry.notas.push(nota.nota);
+    } else {
+      entry.push({ bimestre: prova.idBimestre, notas: [nota.nota] });
+    }
+
+    boletimMap.set(key, entry);
+  });
 
   return (
     <div>
-      <Navbar usuario={usuario} />
-      <Box sx={{ width: "90%", mx: "auto", mt: 4, px: 2 }}>
-        <Typography variant="h4" gutterBottom>
-          Boletim de {usuario.Nome}
-        </Typography>
+      <h1>Boletim Escolar - {usuario.Nome}</h1>
 
-        {alunos.length === 0 ? (
-          <Typography>Nenhum aluno vinculado.</Typography>
-        ) : (
-          alunos.map(aluno => (
-            <Box key={aluno.Id} sx={{ mb: 4 }}>
-              <Typography variant="h5" sx={{ mb: 2 }}>
-                {aluno.Nome}
-              </Typography>
-              <Paper elevation={2} sx={{ overflowX: "auto" }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Bimestre</TableCell>
-                      <TableCell>Disciplina</TableCell>
-                      <TableCell>Média Atividades</TableCell>
-                      <TableCell>Média Provas</TableCell>
-                      <TableCell>Média Final</TableCell>
-                      <TableCell>Situação</TableCell>
-                      <TableCell>Observações</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {boletins
-                      .filter(b => b.Id_Aluno === aluno.Id)
-                      .map(b => (
-                        <TableRow key={`${aluno.Id}-${b.Id_Disciplina}-${b.Id_Bimestre}`}>
-                          <TableCell>{b.Id_Bimestre}º</TableCell>
-                          <TableCell>{b.Id_Disciplina}</TableCell> {/* ou nome da disciplina, se você tiver */}
-                          <TableCell>{parseFloat(b.MediaAtividades).toFixed(2)}</TableCell>
-                          <TableCell>{parseFloat(b.MediaProvas).toFixed(2)}</TableCell>
-                          <TableCell>{parseFloat(b.MediaFinal).toFixed(2)}</TableCell>
-                          <TableCell>{b.Situacao}</TableCell>
-                          <TableCell>{b.Observacoes}</TableCell>
-                        </TableRow>
-                      ))}
-                  </TableBody>
-                </Table>
-              </Paper>
-            </Box>
-          ))
-        )}
-      </Box>
+      <h2>Turmas</h2>
+      <ul>
+        {turmas.map((turma) => (
+          <li key={turma.idTurma}>
+            {turma.nome} - {turma.serie}ª Série
+          </li>
+        ))}
+      </ul>
+
+      <h2>Notas por Disciplina</h2>
+      {boletimMap.size === 0 && <p>Nenhuma nota encontrada.</p>}
+
+      {[...boletimMap.entries()].map(([disciplina, bimestres]) => (
+        <div key={disciplina} style={{ marginBottom: "1.5rem" }}>
+          <h3>{disciplina}</h3>
+          <ul>
+            {bimestres.map((b) => {
+              const media =
+                b.notas.reduce((acc, val) => acc + val, 0) / b.notas.length;
+              return (
+                <li key={b.bimestre}>
+                  Bimestre {b.bimestre}: Média {media.toFixed(1)}{" "}
+                  ({b.notas.length} nota{b.notas.length > 1 ? "s" : ""})
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
     </div>
   );
 }

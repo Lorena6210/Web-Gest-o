@@ -1,11 +1,10 @@
-// pages/responsavel/[id]/boletim.tsx
+// pages/responsavel/[id]/provas.tsx
 
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmaCompleta, TurmaCompleta } from "@/lib/TurmaApi";
-import { fetchNotas, NotaProva } from "@/lib/NotasApi";
 import { fetchGetProva, Prova } from "@/lib/provaApi";
-import ResponsavelBoletimPage from "@/components/responsavel/boletim"
+import ResponsavelProvasPage from "@/components/responsavel/pova";
 
 interface Usuario {
   Nome: string;
@@ -13,30 +12,25 @@ interface Usuario {
   Tipo: string;
 }
 
-interface Props {
+interface ResponsavelProvasProps {
   usuario: Usuario;
   turmas: TurmaCompleta[];
   provas: Prova[];
-  notas: NotaProva[];
 }
 
-export default function ResponsavelBoletimContainer({
+export default function ResponsavelProvasContainer({
   usuario,
   turmas,
   provas,
-  notas,
-}: Props) {
+}: ResponsavelProvasProps) {
   return (
-    <ResponsavelBoletimPage
-      usuario={usuario}
-      turmas={turmas}
-      provas={provas}
-      notas={notas}
-    />
+    <ResponsavelProvasPage usuario={usuario} turmas={turmas} provas={provas} />
   );
 }
 
-export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
+export const getServerSideProps: GetServerSideProps<ResponsavelProvasProps> = async (
+  context
+) => {
   const { id } = context.query;
   const idNum = Number(id);
 
@@ -47,26 +41,22 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
   // Buscar usuário responsável
   const usuarios = await fetchUsuarios();
   const usuario = usuarios.responsaveis?.find((u: Usuario) => u.Id === idNum);
+
   if (!usuario) return { notFound: true };
 
-  // Buscar turmas dos filhos
+  // Buscar turmas dos alunos do responsável
   const turmasResponse = await fetchTurmaCompleta(idNum);
   const turmas: TurmaCompleta[] = Array.isArray(turmasResponse) ? turmasResponse : [];
 
-  // Buscar provas
-  const provaResponse = await fetchGetProva();
-  const provas = provaResponse?.provas || [];
-
-  // Buscar notas dos filhos
-  let notasResponse = await fetchNotas(idNum);
-  const notas: NotaProva[] = Array.isArray(notasResponse) ? notasResponse : [];
+  // Buscar todas as provas (você pode filtrar depois por turma)
+  const provasResponse = await fetchGetProva();
+  const provas: Prova[] = provasResponse?.provas || [];
 
   return {
     props: {
       usuario,
       turmas,
       provas,
-      notas,
     },
   };
 };
