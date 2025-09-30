@@ -1,15 +1,37 @@
-// pages/professor/[id].tsx
+// pages/aluno/[id].tsx
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
-import { fetchTurmaCompleta } from "@/lib/TurmaApi"; // Assumindo que funciona para professor (turmas que ele leciona)
+import { fetchTurmaCompleta } from "@/lib/TurmaApi";
 import { TurmaCompleta } from "@/Types/Turma";
-import { Prova, fetchProvasCompleto, NotaProva, fetchNotasProva } from "@/lib/provaApi";
-import AlunoPageComponent from "@/components/Aluno/prova"; // Novo componente para professor
+import { NotaProva, fetchGetProva } from "@/lib/provaApi";
+import { fetchNotas } from "@/lib/NotasApi";
+import AlunoViewComponent from "@/components/Aluno/prova/index";
 
 interface Usuario {
   Nome: string;
   Id: number;
   Tipo: string;
+}
+
+export interface Prova {
+  id: number;
+  titulo: string;
+  descricao: string;
+  dataCriacao: string;
+  dataEntrega: string;
+  idBimestre: number;
+  nomeBimestre: string;
+  professor: string;
+  turma: string;
+  disciplina: string;
+}
+
+interface ProvaResponse {
+  provas: Prova[];
+  filtros: {
+    turmaId: string;
+    bimestre: string;
+  };
 }
 
 interface Props {
@@ -21,7 +43,7 @@ interface Props {
 
 export default function AlunoPageContainer({ usuario, turmas, provas, notas }: Props) {
   return (
-    <AlunoPageComponent usuario={usuario} turmas={turmas} provas={provas} notas={notas} />
+    <AlunoViewComponent usuario={usuario} turmas={turmas} provas={provas} notas={notas} />
   );
 }
 
@@ -33,42 +55,22 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
     return { notFound: true };
   }
 
-  // Buscar usuário como professor
+  // Buscar usuário como aluno
   const usuarios = await fetchUsuarios();
-  const usuario = usuarios.professores?.find((u: Usuario) => u.Id === idNum); // Ajuste para professores
+  const usuario = usuarios.alunos?.find((u: Usuario) => u.Id === idNum);
   if (!usuario) return { notFound: true };
 
-  // Buscar turmas do professor (assumindo que fetchTurmaCompleta(idProfessor) retorna turmas que ele leciona)
+  // Buscar turma do aluno
   let turmas = await fetchTurmaCompleta(idNum);
   turmas = Array.isArray(turmas) ? turmas : turmas ? [turmas] : [];
 
-  // Buscar provas completas de todas as turmas do professor
-  let provas: Prova[] = [];
-  for (const turma of turmas) {
-    try {
-      const provasDaTurma = await fetchProvasCompleto(turma.Id);
-      if (Array.isArray(provasDaTurma)) provas = provas.concat(provasDaTurma);
-    } catch (error) {
-      console.error(`Erro ao buscar provas da turma ${turma.Id}`, error);
-    }
-  }
+  // Buscar provas
+  const provaResponse: ProvaResponse = await fetchGetProva();
+  const provas = provaResponse.provas || [];
 
-  // Buscar notas das provas do professor (filtro por Id_Professor === usuario.Id)
-  // Isso puxa todas as notas das provas, mas filtra apenas as do professor logado
-  // Inclui nome da prova (TituloProva), nota (Valor), disciplina (NomeDisciplina), aluno (NomeAluno)
-  let notas: NotaProva[] = [];
-  for (const prova of provas) {
-    try {
-      const notasProva = await fetchNotasProva(prova.Id); // Sem filtro de bimestre; ajuste se necessário
-      // Filtrar apenas as notas do professor atual (todas as notas dos alunos nessa prova, se o professor é o responsável)
-      const notasProfessor = notasProva.filter((n: NotaProva) => n.Id_Professor === usuario.Id);
-      // Opcional: Filtro por bimestre aqui (ex: 1º Bimestre)
-      // const notasProfessor = notasProva.filter((n: NotaProva) => n.Id_Professor === usuario.Id && n.Id_Bimestre === 1);
-      notas = notas.concat(notasProfessor);
-    } catch (error) {
-      console.error(`Erro ao buscar notas da prova ${prova.Id}`, error);
-    }
-  }
+  // Buscar notas
+  let notas = await fetchNotas();
+  notas = Array.isArray(notas) ? notas : notas ? [notas] : [];
 
   return {
     props: {

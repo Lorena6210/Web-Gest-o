@@ -4,6 +4,7 @@ import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmaCompleta } from '@/lib/TurmaApi';
 import { fetchGradesCurriculares, GradeCurricular } from "@/lib/gradeCurricular";
 import { TurmaCompleta } from "@/Types/Turma";
+import { fetchDisciplinas, Disciplina } from "@/lib/disciplinaApi";
 
 interface Usuario {
   Id: number;
@@ -43,24 +44,51 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
   const usuario = usuarios.alunos?.find((u: Usuario) => u.Id === idNum);
   if (!usuario) return { notFound: true };
 
-  // Buscar turma do aluno
-  let turmas = await fetchTurmaCompleta(idNum);
-  turmas = Array.isArray(turmas) ? turmas : turmas ? [turmas] : [];
-  if (turmas.length === 0) return { notFound: true };
+  // Buscar turmas do aluno
+  const turmas = await fetchTurmaCompleta(idNum);
+  const turmasCompletas = turmas ? [turmas] : [];
 
-  const turma = turmas[0];
-  const idGrade = turma.Id_GradeCurricular;
+  // Buscar dados auxiliares
+  const disciplinas = await fetchDisciplinas();
+  const rawGrades = await fetchGradesCurriculares();
 
-  // Buscar apenas as disciplinas da grade
-  const disciplinas = idGrade ? await fetchDisciplinasPorGrade(idGrade) : [];
+  // Agrupar disciplinas por grade curricular
+  const gradeMap = new Map<number, GradeCurricular & { Disciplinas: Disciplina[] }>();
 
-  // Retornar disciplinas como "gradeCurricular"
-   const gradeCurricular = await fetchGradesCurriculares();
+  rawGrades.forEach((g) => {
+    const disciplina: Disciplina = {
+      Id_Disciplina: g.Id_Disciplina,
+      Nome: g.Nome_Disciplina,
+      Codigo: g.Codigo_Disciplina,
+      Semestre: g.Semestre,
+      CargaHoraria: g.CargaHoraria,
+      Descricao: g.Descricao_Grade,
+      Bimestre: g.Bimestre,
+      Id_Professor: g.Id_Professor,
+      Id_Turma: g.Id_Turma,
+    };
+
+    const gradeId = g.Id_GradeCurricular;
+
+    if (gradeMap.has(gradeId)) {
+      gradeMap.get(gradeId)!.Disciplinas.push(disciplina);
+    } else {
+      gradeMap.set(gradeId, {
+        ...g,
+        Disciplinas: [disciplina],
+      });
+    }
+  });
+
+  const gradeCurricular = Array.from(gradeMap.values()).map((g) => ({
+    ...g,
+    Disciplinas: g.Disciplinas || [],
+  }));
 
   return {
     props: {
       usuario,
-      turmas,
+      turmas: turmasCompletas,
       gradeCurricular,
     },
   };
