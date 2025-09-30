@@ -80,4 +80,8 @@ export default function AlunoViewComponent({ usuario, turmas, provas, notas }: P
     </div>
    </Box>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d68c3206b4398d4e464e90d5c80083212044ab8f

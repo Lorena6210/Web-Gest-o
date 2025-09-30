@@ -80,10 +80,38 @@ function criarTurma(req, res) {
         (0, exports.garantirExistencia)('Turno', turno),
         (0, exports.garantirExistencia)('Sala', sala)
     ])
-        .then(([idSerie, idTurno, idSala]) => {
+        .then((_a) => __awaiter(this, [_a], void 0, function* ([idSerie, idTurno, idSala]) {
+        // Verificar restrição para professores: não podem ter mais de uma turma no mesmo turno
+        if (professores && professores.length > 0) {
+            for (const prof of professores) {
+                // Buscar turmas ativas do professor no mesmo turno
+                const turmasTurno = yield queryAsync(`
+            SELECT t.Id FROM Professor_Turma_Disciplina ptd
+            JOIN Turma t ON ptd.Id_Turma = t.Id
+            WHERE ptd.Id_Professor = ? AND ptd.Status = 'Ativo' AND t.Id_Turno = ? AND t.Status = 'Ativo'
+          `, [prof.id, idTurno]);
+                if (turmasTurno.length > 0) {
+                    throw new Error(`Professor ID ${prof.id} já possui turma ativa no turno ${turno}`);
+                }
+            }
+        }
+        // Verificar restrição para alunos: não podem estar em mais de uma turma ativa
+        if (alunos && alunos.length > 0) {
+            for (const idAluno of alunos) {
+                const turmasAluno = yield queryAsync(`
+            SELECT 1 FROM Aluno_Turma at
+            JOIN Turma t ON at.Id_Turma = t.Id
+            WHERE at.Id_Aluno = ? AND at.Status = 'Ativo' AND t.Status = 'Ativo'
+          `, [idAluno]);
+                if (turmasAluno.length > 0) {
+                    throw new Error(`Aluno ID ${idAluno} já está matriculado em outra turma ativa.`);
+                }
+            }
+        }
+        // Inserir turma
         return queryAsync(`INSERT INTO Turma (Nome, Id_Serie, AnoLetivo, Id_Turno, Id_Sala, CapacidadeMaxima)
          VALUES (?, ?, ?, ?, ?, ?)`, [nome, idSerie, anoLetivo, idTurno, idSala, capacidadeMaxima]);
-    })
+    }))
         .then(turmaResult => {
         const idTurma = turmaResult.insertId;
         return Promise.all([
@@ -106,7 +134,11 @@ function criarTurma(req, res) {
         .catch(error => {
         const message = error instanceof Error ? error.message : 'Erro desconhecido';
         console.error('Erro ao criar turma:', message);
-        res.status(500).json({ success: false, message: 'Erro ao criar turma', error: message });
+        res.status(400).json({
+            success: false,
+            message: 'Erro ao criar turma',
+            error: message
+        });
     });
 }
 // Adicionar/remover aluno
@@ -418,7 +450,6 @@ function visualizarNotasItens(req, res) {
     });
 }
 // Turma completa
-// Turma completa
 function obterTurmaCompleta(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const { id } = req.params; // Obter o ID da turma a partir dos parâmetros da requisição
@@ -455,16 +486,20 @@ function obterTurmaCompleta(req, res) {
                 return res.status(404).json({ success: false, message: 'Turma não encontrada' });
             }
             const turma = turmas[0]; // Obter a turma encontrada
-            // Buscar detalhes da turma
+            // Buscar detalhes da turma com restrição para alunos que não estejam em outra turma ativa
             const [alunos, professores, disciplinas, atividades, provas, faltas] = yield Promise.all([
-                // Alunos
+                // Alunos ativos na turma e que não estejam ativos em outra turma diferente
                 queryAsync(`
         SELECT a.Id, a.Nome, a.RA, a.FotoPerfil
         FROM Aluno a
         INNER JOIN Aluno_Turma at ON at.Id_Aluno = a.Id
         WHERE at.Id_Turma = ? AND at.Status = 'Ativo'
+          AND NOT EXISTS (
+            SELECT 1 FROM Aluno_Turma at2
+            WHERE at2.Id_Aluno = a.Id AND at2.Status = 'Ativo' AND at2.Id_Turma != ?
+          )
         ORDER BY a.Nome
-      `, [turma.Id]),
+      `, [turma.Id, turma.Id]),
                 // Professores com disciplinas
                 queryAsync(`
         SELECT p.Id, p.Nome, p.Email, p.FotoPerfil, 
