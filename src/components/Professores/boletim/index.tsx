@@ -36,6 +36,7 @@ export interface Aluno {
 export interface Disciplina {
   Id: number;
   Nome: string;
+  NomeDisciplina:string
 }
 
 interface Props {

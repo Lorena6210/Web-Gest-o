@@ -35,12 +35,12 @@ const obterNotasProva = (req, res) => __awaiter(void 0, void 0, void 0, function
     LEFT JOIN Turma t ON p.Id_Turma = t.Id
     WHERE n.Id_Prova = ?
   `;
-    const params = [Number(provaId)]; // Garantir que provaId seja número
+    const params = [Number(provaId)];
     if (idBimestre) {
         sql += ` AND n.Id_Bimestre = ?`;
         params.push(idBimestre);
     }
-    sql += ` ORDER BY n.Id_Bimestre, a.Nome`; // Ordenar por bimestre e nome do aluno
+    sql += ` ORDER BY n.Id_Bimestre, a.Nome`;
     try {
         const [results] = yield db_1.default.promise().query(sql, params);
         res.json({
@@ -98,7 +98,7 @@ const criarNotaProva = (req, res) => __awaiter(void 0, void 0, void 0, function*
         return res.status(400).json({ error: 'Campos obrigatórios: Id_Aluno, Id_Turma, Id_Bimestre, Id_Prova, Valor' });
     }
     try {
-        // Verificar se a prova pertence ao bimestre
+        // Verificar se a prova pertence ao bimestre informado
         const [provaRows] = yield db_1.default.promise().query(`
       SELECT Id_Disciplina FROM Prova WHERE Id = ? AND Id_Bimestre = ?
     `, [Id_Prova, Id_Bimestre]);
@@ -106,12 +106,13 @@ const criarNotaProva = (req, res) => __awaiter(void 0, void 0, void 0, function*
             return res.status(400).json({ error: 'Prova não encontrada para o bimestre informado' });
         }
         const idDisciplina = provaRows[0].Id_Disciplina;
+        // Inserir nota na tabela Nota vinculada à prova
         const sql = `
       INSERT INTO Nota (Id_Aluno, Id_Turma, Id_Bimestre, Id_Prova, Valor)
       VALUES (?, ?, ?, ?, ?)
     `;
         const [result] = yield db_1.default.promise().query(sql, [Id_Aluno, Id_Turma, Id_Bimestre, Id_Prova, Valor]);
-        // Atualizar boletim por bimestre
+        // Atualizar boletim para refletir a nova nota
         yield (0, boletimController_1.atualizarBoletim)(Id_Aluno, idDisciplina, Id_Bimestre);
         res.status(201).json({ message: 'Nota de prova criada com sucesso no bimestre informado', id: result.insertId, idBimestre: Id_Bimestre });
     }

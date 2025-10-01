@@ -208,13 +208,14 @@ const getNotasPorAlunoDisciplinaBimestre = (req, res) => __awaiter(void 0, void 
     }
 });
 exports.getNotasPorAlunoDisciplinaBimestre = getNotasPorAlunoDisciplinaBimestre;
-// GET - Todos os boletins (com cálculos por bimestre)
+// GET - Todos os boletins (com cálculos por bimestre e nome da disciplina)
 const getBoletins = (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const sql = `
       SELECT
         b.Id_Aluno,
         b.Id_Disciplina,
+        d.Nome AS NomeDisciplina,
         b.Id_Bimestre,
         b.Situacao,
         b.Observacoes,
@@ -258,6 +259,7 @@ const getBoletins = (_req, res) => __awaiter(void 0, void 0, void 0, function* (
           2
         ) AS MediaFinal
       FROM Boletim b
+      JOIN Disciplina d ON b.Id_Disciplina = d.Id
       ORDER BY b.Id_Aluno, b.Id_Disciplina, b.Id_Bimestre
     `;
         const [results] = yield db_1.default.promise().query(sql);

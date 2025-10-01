@@ -39,6 +39,7 @@ export interface Aluno {
 export interface Disciplina {
   Id: number;
   Nome: string;
+  NomeDisciplina: string
   Codigo: string;
   CargaHoraria: number;
   Id_Professor: number;
@@ -261,12 +262,12 @@ useEffect(() => {
   };
 
   const styleModal = {
-    borderRadius: 4,
     maxWidth: 600,
+    width: "100%",
     bgcolor: "background.paper",
     p: 4,
-    mx: "auto",
-    my: "5vh",
+    borderRadius: "16px",
+    boxShadow: 24,
     maxHeight: "80vh",
     overflowY: "auto",
   };
@@ -274,29 +275,27 @@ useEffect(() => {
   return (
     <div className="flex flex-col h-screen w-full bg-gray-50">
       <Navbar usuario={usuario} />
-      <main className="flex-1 overflow-y-auto p-6" style={{display: "flex", flexDirection: "column", width: "100%", maxWidth:"1024px", justifyContent: "center", alignItems: "center", gap:"20px"}}>
-        <h1 className="text-2xl font-bold mb-6">Todas as Turmas</h1>
+      <main className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-6 max-w-7xl mx-auto" style={{display: "flex", flexDirection:"row",justifyContent:"space-between"}}>
+        <h1 className="text-3xl font-bold text-gray-800">Todas as Turmas</h1>
 
         {loading ? (
-          <p>Carregando turmas...</p>
+          <p className="text-gray-500">Carregando turmas...</p>
         ) : turmas.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style={{display: "flex", margin: "0 auto", flexDirection: "row", flexWrap: "wrap", width: "100%", maxWidth:"1024px", justifyContent: "center", alignItems: "center", gap:"24px"}}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
             {turmas.map((turma) => (
               <div
                 key={turma.Id}
-                className="bg-white shadow-lg rounded-xl p-6 cursor-pointer hover:shadow-xl"
+                className="bg-white shadow-md hover:shadow-xl rounded-xl p-6 cursor-pointer transition-transform transform hover:scale-105 flex flex-col gap-2"
                 onClick={() => handleOpenDetalhes(turma)}
               >
-                <h2 className="text-xl font-bold">{turma.Nome}</h2>
-                <p className="text-gray-600">
-                  {turma.Serie} • {turma.AnoLetivo} • {turma.Turno}
-                </p>
-                <p className="text-sm text-gray-500">Sala: {turma.Sala}</p>
+                <h2 className="text-xl font-semibold text-gray-800">{turma.Nome}</h2>
+                <p className="text-gray-600">{turma.Serie} • {turma.AnoLetivo} • {turma.Turno}</p>
+                <p className="text-sm text-gray-400">Sala: {turma.Sala}</p>
               </div>
             ))}
           </div>
         ) : (
-          <p>Nenhuma turma encontrada.</p>
+          <p className="text-gray-500">Nenhuma turma encontrada.</p>
         )}
 
         {/* Modal Detalhes */}
@@ -304,12 +303,12 @@ useEffect(() => {
           <Box sx={styleModal}>
             {turmaSelecionada && (
               <>
-                <Typography variant="h6">{turmaSelecionada.Nome}</Typography>
+                <Typography variant="h6" sx={{ mb: 1 }}>{turmaSelecionada.Nome}</Typography>
                 <Typography>Série: {turmaSelecionada.Serie} | Ano: {turmaSelecionada.AnoLetivo}</Typography>
                 <Typography>Turno: {turmaSelecionada.Turno} | Sala: {turmaSelecionada.Sala}</Typography>
 
                 <Typography sx={{ mt: 2, fontWeight: "bold" }}>Alunos:</Typography>
-                <ul className="list-disc list-inside max-h-40 overflow-y-auto">
+                <ul className="list-disc list-inside max-h-64 overflow-y-auto">
                   {turmaSelecionada.alunos?.length ? (
                     turmaSelecionada.alunos.map((a) => <li key={a.Id}>{a.Nome}</li>)
                   ) : (
@@ -318,11 +317,9 @@ useEffect(() => {
                 </ul>
 
                 <Typography sx={{ mt: 2, fontWeight: "bold" }}>Disciplinas e Professores:</Typography>
-                <ul className="list-disc list-inside max-h-40 overflow-y-auto">
+                <ul className="list-disc list-inside max-h-64 overflow-y-auto">
                   {turmaSelecionada.disciplinas?.length ? (
                     turmaSelecionada.disciplinas.map((d) => {
-                      // Procurar o professor que tem essa disciplina
-                      // turmaSelecionada.professores pode não ter o nome completo, então use o estado professores
                       const profId = turmaSelecionada.professores?.find((p) => p.Disciplinas.includes(d.Id.toString()))?.Id;
                       const prof = professores.find((p) => p.Id === profId);
                       return (
@@ -338,14 +335,10 @@ useEffect(() => {
               </>
             )}
             {turmaSelecionada && (
-              <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-              <Button onClick={() => handleOpenEditar()} sx={{ mr: 2 }}>
-                Editar
-              </Button>
-              <Button onClick={() => handleDeleteTurma(turmaSelecionada)} sx={{ mr: 2 }}>
-                Excluir
-              </Button>
-                <Button onClick={handleCloseDetalhes}>Fechar</Button>
+              <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3, gap: 2 }}>
+                <Button variant="outlined" onClick={handleOpenEditar}>Editar</Button>
+                <Button variant="outlined" color="error" onClick={() => handleDeleteTurma(turmaSelecionada)}>Excluir</Button>
+                <Button variant="contained" onClick={handleCloseDetalhes}>Fechar</Button>
               </Box>
             )}
           </Box>
@@ -372,7 +365,6 @@ useEffect(() => {
               onChange={(e) => handleEditChange("CapacidadeMaxima", Number(e.target.value))}
             />
 
-            {/* Seleção de professores por disciplina */}
             <Typography sx={{ fontWeight: 600 }}>Professores por disciplina:</Typography>
             {editTurma?.disciplinas?.map((d) => (
               <Box key={d.Id} sx={{ mb: 2 }}>
@@ -388,21 +380,15 @@ useEffect(() => {
                 >
                   <option value="">Selecione um professor</option>
                   {professores.map((prof) => (
-                    <option key={prof.Id} value={prof.Id}>
-                      {prof.Nome}
-                    </option>
+                    <option key={prof.Id} value={prof.Id}>{prof.Nome}</option>
                   ))}
                 </select>
               </Box>
             ))}
 
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-              <Button variant="outlined" onClick={handleCloseEditar}>
-                Cancelar
-              </Button>
-              <Button variant="contained" onClick={salvarAlteracoes}>
-                Salvar
-              </Button>
+              <Button variant="outlined" onClick={handleCloseEditar}>Cancelar</Button>
+              <Button variant="contained" onClick={salvarAlteracoes}>Salvar</Button>
             </Box>
           </Box>
         </Modal>
@@ -410,9 +396,7 @@ useEffect(() => {
         {/* Modal Criar */}
         <Modal open={openCriar} onClose={() => setOpenCriar(false)}>
           <Box sx={{ ...styleModal, maxWidth: 600 }}>
-            <Typography variant="h5" sx={{ mb: 4, fontWeight: 700, color: "#4F46E5" }}>
-              Criar turma
-            </Typography>
+            <Typography variant="h5" sx={{ mb: 4, fontWeight: 700, color: "#4F46E5" }}>Criar turma</Typography>
 
             <Input fullWidth placeholder="Nome" value={novaTurma.Nome} onChange={(e) => setNovaTurma({ ...novaTurma, Nome: e.target.value })} sx={{ mb: 3 }} />
             <Input fullWidth placeholder="Série" value={novaTurma.Serie} onChange={(e) => setNovaTurma({ ...novaTurma, Serie: e.target.value })} sx={{ mb: 3 }} />
@@ -421,7 +405,6 @@ useEffect(() => {
             <Input fullWidth placeholder="Sala" value={novaTurma.Sala} onChange={(e) => setNovaTurma({ ...novaTurma, Sala: e.target.value })} sx={{ mb: 3 }} />
             <Input type="number" fullWidth placeholder="Capacidade Máxima" value={novaTurma.CapacidadeMaxima} onChange={(e) => setNovaTurma({ ...novaTurma, CapacidadeMaxima: Number(e.target.value) })} sx={{ mb: 3 }} />
 
-            {/* Alunos */}
             <Typography sx={{ fontWeight: 600 }}>Selecione os alunos:</Typography>
             <Box sx={{ maxHeight: 150, overflowY: "auto", mb: 3, border: "1px solid #e5e7eb", borderRadius: 1, p: 2 }}>
               {alunos.map((a) => (
@@ -442,7 +425,6 @@ useEffect(() => {
               ))}
             </Box>
 
-            {/* Disciplinas */}
             <Typography sx={{ fontWeight: 600 }}>Selecione as disciplinas:</Typography>
             <Box sx={{ maxHeight: 150, overflowY: "auto", mb: 3, border: "1px solid #e5e7eb", borderRadius: 1, p: 2 }}>
               {disciplinas.map((d) => (
@@ -453,7 +435,6 @@ useEffect(() => {
                     onChange={() => {
                       if (selectedDisciplinas.some((disc) => disc.Codigo === d.Codigo)) {
                         setSelectedDisciplinas(selectedDisciplinas.filter((disc) => disc.Codigo !== d.Codigo));
-                        // Remover professor da disciplina
                         const copy = { ...professoresPorDisciplina };
                         delete copy[d.Id];
                         setProfessoresPorDisciplina(copy);
@@ -467,7 +448,6 @@ useEffect(() => {
               ))}
             </Box>
 
-            {/* Seleção de professores por disciplina */}
             {selectedDisciplinas.length > 0 && (
               <>
                 <Typography sx={{ fontWeight: 600 }}>Professores por disciplina:</Typography>
@@ -485,9 +465,7 @@ useEffect(() => {
                     >
                       <option value="">Selecione um professor</option>
                       {professores.map((prof) => (
-                        <option key={prof.Id} value={prof.Id}>
-                          {prof.Nome}
-                        </option>
+                        <option key={prof.Id} value={prof.Id}>{prof.Nome}</option>
                       ))}
                     </select>
                   </Box>
@@ -509,11 +487,13 @@ useEffect(() => {
         </Snackbar>
 
         {/* Botão flutuante Criar */}
-        <Box onClick={() => setOpenCriar(true)} className="fixed bottom-6 right-6 bg-indigo-600 text-white p-5 rounded-full shadow-lg cursor-pointer hover:bg-indigo-700 transition-colors">
-          <FaPlus size={20} />
+        <Box
+          onClick={() => setOpenCriar(true)}
+          className="fixed bottom-6 right-6 bg-indigo-600 text-white p-5 rounded-full shadow-xl cursor-pointer hover:bg-indigo-700 transition-transform transform hover:scale-110 flex items-center justify-center"
+        >
+          <FaPlus size={24} />
         </Box>
       </main>
     </div>
   );
 }
-

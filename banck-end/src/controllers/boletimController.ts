@@ -224,13 +224,14 @@ export const getNotasPorAlunoDisciplinaBimestre = async (req: Request, res: Resp
   }
 };
 
-// GET - Todos os boletins (com cálculos por bimestre)
+// GET - Todos os boletins (com cálculos por bimestre e nome da disciplina)
 export const getBoletins = async (_req: Request, res: Response): Promise<void> => {
   try {
     const sql = `
       SELECT
         b.Id_Aluno,
         b.Id_Disciplina,
+        d.Nome AS NomeDisciplina,
         b.Id_Bimestre,
         b.Situacao,
         b.Observacoes,
@@ -274,6 +275,7 @@ export const getBoletins = async (_req: Request, res: Response): Promise<void> =
           2
         ) AS MediaFinal
       FROM Boletim b
+      JOIN Disciplina d ON b.Id_Disciplina = d.Id
       ORDER BY b.Id_Aluno, b.Id_Disciplina, b.Id_Bimestre
     `;
     const [results] = await pool.promise().query<RowDataPacket[]>(sql);
@@ -283,6 +285,7 @@ export const getBoletins = async (_req: Request, res: Response): Promise<void> =
     res.status(500).json({ error: 'Erro ao buscar boletins' });
   }
 };
+
 
 // GET - Boletim específico por aluno e disciplina (com cálculos por bimestre)
 export const getBoletimPorAlunoEDisciplina = async (req: Request, res: Response): Promise<void> => {

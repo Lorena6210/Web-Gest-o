@@ -25,13 +25,13 @@ export const obterNotasProva = async (req: Request, res: Response) => {
     WHERE n.Id_Prova = ?
   `;
 
-  const params: (number | string)[] = [Number(provaId)]; // Garantir que provaId seja número
+  const params: (number | string)[] = [Number(provaId)];
   if (idBimestre) {
     sql += ` AND n.Id_Bimestre = ?`;
     params.push(idBimestre);
   }
 
-  sql += ` ORDER BY n.Id_Bimestre, a.Nome`; // Ordenar por bimestre e nome do aluno
+  sql += ` ORDER BY n.Id_Bimestre, a.Nome`;
 
   try {
     const [results] = await pool.promise().query<RowDataPacket[]>(sql, params);
@@ -96,7 +96,7 @@ export const criarNotaProva = async (req: Request, res: Response) => {
   }
 
   try {
-    // Verificar se a prova pertence ao bimestre
+    // Verificar se a prova pertence ao bimestre informado
     const [provaRows] = await pool.promise().query<RowDataPacket[]>(`
       SELECT Id_Disciplina FROM Prova WHERE Id = ? AND Id_Bimestre = ?
     `, [Id_Prova, Id_Bimestre]);
@@ -107,6 +107,7 @@ export const criarNotaProva = async (req: Request, res: Response) => {
 
     const idDisciplina = provaRows[0].Id_Disciplina;
 
+    // Inserir nota na tabela Nota vinculada à prova
     const sql = `
       INSERT INTO Nota (Id_Aluno, Id_Turma, Id_Bimestre, Id_Prova, Valor)
       VALUES (?, ?, ?, ?, ?)
@@ -114,7 +115,7 @@ export const criarNotaProva = async (req: Request, res: Response) => {
 
     const [result] = await pool.promise().query<OkPacket>(sql, [Id_Aluno, Id_Turma, Id_Bimestre, Id_Prova, Valor]);
 
-    // Atualizar boletim por bimestre
+    // Atualizar boletim para refletir a nova nota
     await atualizarBoletim(Id_Aluno, idDisciplina, Id_Bimestre);
 
     res.status(201).json({ message: 'Nota de prova criada com sucesso no bimestre informado', id: result.insertId, idBimestre: Id_Bimestre });
@@ -123,6 +124,7 @@ export const criarNotaProva = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Erro ao criar nota de prova' });
   }
 };
+
 
 // PUT - Atualizar prova (suporte a Id_Bimestre opcional)
 export const atualizarProva = async (req: Request, res: Response) => {
