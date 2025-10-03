@@ -1,0 +1,235 @@
+
+/* Estilo base da tela */
+body {
+  background-color: #f9fafb; /* equivalente a bg-gray-50 */
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+/* Container principal */
+.page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background-color: #f9fafb;
+}
+
+/* Cabeçalho (Título + botão) */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem; /* mb-6 */
+}
+
+.header h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.header p {
+  color: #4b5563; /* text-gray-600 */
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0;
+}
+
+.header .btn-nova-turma {
+  background-color: #2563eb; /* azul */
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.header .btn-nova-turma:hover {
+  background-color: #1e40af;
+}
+
+/* Cards de métricas (DashboardCards) */
+.dashboard-cards {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-cards .card {
+  flex: 1;
+  color: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.card.bg-indigo {
+  background-color: #4f46e5;
+}
+
+.card.bg-green {
+  background-color: #10b981;
+}
+
+.card.bg-yellow {
+  background-color: #f59e0b;
+}
+
+.card h3 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.card p {
+  margin: 0.25rem 0 0;
+}
+
+/* Grid de turmas */
+.turmas-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  gap: 1.5rem;
+  margin-left: 310px; /* conforme seu estilo inline */
+  width: 95%;
+  max-width: 1024px;
+}
+
+/* Card de turma */
+.class-card {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  padding: 1rem;
+  cursor: pointer;
+  flex: 1 1 280px; /* permite responsividade */
+  display: flex;
+  flex-direction: column;
+}
+
+.class-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.class-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.class-info, .class-room {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.class-info {
+  font-size: 0.875rem;
+  color: #6b7280; /* text-gray-600 */
+  margin: 0.25rem 0;
+}
+
+.class-room {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-top: 0.5rem;
+}
+
+.card-details {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+.card-detail-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+
+.card-details p {
+  margin: 0.4rem 0;
+}
+
+.card-details .ocupacao-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.card-details .ocupacao-bar {
+  width: 100%;
+  background-color: #e5e7eb; /* gray-200 */
+  height: 0.5rem;
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+.ocupacao-label {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #777;
+}
+
+.ocupacao-bar {
+  background: #eee;
+  border-radius: 6px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.ocupacao-fill {
+  height: 100%;
+  background: linear-gradient(to right, #4caf50, #81c784);
+}
+
+.card-details .ocupacao-bar .ocupacao-fill {
+  height: 100%;
+  background-color: #2563eb; /* azul */
+  border-radius: 0.25rem;
+}
+
+/* Botão flutuante de nova turma “+” */
+.btn-floating {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background-color: #4f46e5;
+  color: white;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-floating:hover {
+  background-color: #4338ca;
+}
+
+/* Estilo de ícones dentro dos cards / botões */
+.icon-black {
+  color: #000;
+}
+
+.icon-white {
+  color: #fff;
+}
+
+/* Adicionais responsivos */
+@media (max-width: 768px) {
+  .turmas-grid {
+    margin-left: 0;
+    justify-content: center;
+  }
+}

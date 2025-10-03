@@ -14,6 +14,7 @@ export interface Disciplina {
 }
 
 export interface TurmaCompleta {
+  capacidade: Aluno[] | undefined;
   Id: number;
   Nome: string;
   Serie: string | null;
