@@ -3,7 +3,7 @@
 import { GetServerSideProps } from "next";
 import { fetchUsuarios } from "@/lib/UsuarioApi";
 import { fetchTurmaCompleta, TurmaCompleta } from "@/lib/TurmaApi";
-import { fetchAtividadesResponsavel, AtividadeDetalhada } from "@/lib/atividadeApi";
+import { fetchAtividades } from "@/lib/atividadeApi";
 import ResponsavelAtividadesPage from "@/components/responsavel/atividade";
 
 interface Usuario {
@@ -12,7 +12,19 @@ interface Usuario {
   Tipo: string;
 }
 
-interface ResponsavelAtividadesProps {
+interface AtividadeDetalhada {
+  id: number;
+  titulo: string;
+  descricao: string;
+  dataCriacao: string;
+  dataEntrega: string;
+  dataFinalizacao: string;
+  professor: string;
+  turma: string;
+  disciplina: string;
+}
+
+interface Props {
   usuario: Usuario;
   turmas: TurmaCompleta[];
   atividades: AtividadeDetalhada[];
@@ -22,13 +34,13 @@ export default function ResponsavelAtividadesContainer({
   usuario,
   turmas,
   atividades,
-}: ResponsavelAtividadesProps) {
+}: Props) {
   return (
     <ResponsavelAtividadesPage usuario={usuario} turmas={turmas} atividades={atividades} />
   );
 }
 
-export const getServerSideProps: GetServerSideProps<ResponsavelAtividadesProps> = async (
+export const getServerSideProps: GetServerSideProps<Props> = async (
   context
 ) => {
   const { id } = context.query;
@@ -51,7 +63,7 @@ export const getServerSideProps: GetServerSideProps<ResponsavelAtividadesProps> 
   const turmas: TurmaCompleta[] = Array.isArray(turmasResponse) ? turmasResponse : [];
 
   // Buscar atividades do responsável (assumindo que essa função existe)
-  const atividadesResponse = await fetchAtividadesResponsavel(idNum);
+  const atividadesResponse = await fetchAtividades(idNum);
   const atividades: AtividadeDetalhada[] = Array.isArray(atividadesResponse)
     ? atividadesResponse
     : [];

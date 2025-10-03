@@ -31,7 +31,7 @@ interface Props {
   Disciplina: Disciplina[];
   turmas: TurmaCompleta[];
   Aluno: Aluno;
-  faltas: Falta[]; // ✅ Adicionado aqui
+  faltas: Falta[]; 
 }
 
 export default function ProfessorBoletimPage({

@@ -1,7 +1,9 @@
-// components/responsavel/ResponsavelAtividadesPage.tsx
-
 import React from "react";
 import { TurmaCompleta } from "@/lib/TurmaApi";
+import { Navbar } from "../Navbar"
+import { Box } from "@mui/material";
+import Navbar from '../Navbar';
+import { Usuario } from '../../../lib/jwtLoginStatus';
 
 interface Usuario {
   Nome: string;
@@ -32,7 +34,9 @@ export default function ResponsavelAtividadesPage({
   atividades,
 }: ResponsavelAtividadesProps) {
   return (
-    <div>
+    <Box>
+      <Navbar Usuario={usuario} />
+    <div >
       <h1>Atividades do Responsável: {usuario.Nome}</h1>
 
       <h2>Turmas</h2>
@@ -58,5 +62,6 @@ export default function ResponsavelAtividadesPage({
         ))}
       </ul>
     </div>
+    </Box>
   );
 }

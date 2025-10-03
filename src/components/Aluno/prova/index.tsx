@@ -62,26 +62,7 @@ export default function AlunoViewComponent({ usuario, turmas, provas, notas }: P
           </ul>
         )}
       </section>
-
-      <section>
-        <h2 className="text-xl font-semibold mt-4">Notas</h2>
-        {notas.length === 0 ? (
-          <p>Este aluno ainda não possui notas.</p>
-        ) : (
-          <ul className="space-y-1">
-            {notas.map((nota, i) => (
-              <li key={i}>
-                Prova {nota.idProva}: {nota.valor}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
    </Box>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> d68c3206b4398d4e464e90d5c80083212044ab8f

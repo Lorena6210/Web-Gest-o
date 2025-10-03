@@ -42,6 +42,7 @@ export interface Aluno {
 export interface Disciplina {
   Id: number;
   Nome: string;
+  NomeDisciplina: string
   Codigo: string;
   CargaHoraria: number;
   Id_Professor: number;
@@ -275,6 +276,7 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
     }
   };
 
+<<<<<<< HEAD
     const filteredAlunos = useMemo(() => {
     return alunos.filter((aluno) =>
       aluno.Nome.toLowerCase().includes(search.toLowerCase())
@@ -417,12 +419,51 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
       <p>Nenhuma turma encontrada.</p>
     )}
 
+=======
+  const styleModal = {
+    maxWidth: 600,
+    width: "100%",
+    bgcolor: "background.paper",
+    p: 4,
+    borderRadius: "16px",
+    boxShadow: 24,
+    maxHeight: "80vh",
+    overflowY: "auto",
+  };
+
+  return (
+    <div className="flex flex-col h-screen w-full bg-gray-50">
+      <Navbar usuario={usuario} />
+      <main className="flex-1 overflow-y-auto p-6 flex flex-col items-center gap-6 max-w-7xl mx-auto" style={{display: "flex", flexDirection:"row",justifyContent:"space-between"}}>
+        <h1 className="text-3xl font-bold text-gray-800">Todas as Turmas</h1>
+
+        {loading ? (
+          <p className="text-gray-500">Carregando turmas...</p>
+        ) : turmas.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+            {turmas.map((turma) => (
+              <div
+                key={turma.Id}
+                className="bg-white shadow-md hover:shadow-xl rounded-xl p-6 cursor-pointer transition-transform transform hover:scale-105 flex flex-col gap-2"
+                onClick={() => handleOpenDetalhes(turma)}
+              >
+                <h2 className="text-xl font-semibold text-gray-800">{turma.Nome}</h2>
+                <p className="text-gray-600">{turma.Serie} • {turma.AnoLetivo} • {turma.Turno}</p>
+                <p className="text-sm text-gray-400">Sala: {turma.Sala}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500">Nenhuma turma encontrada.</p>
+        )}
+>>>>>>> c3ba902082a8f24951e46bcfa1dc1f75de15dc45
 
         {/* Modal Detalhes */}
         <Modal open={openDetalhes} onClose={handleCloseDetalhes}>
           <Box sx={styleModal}>
             {turmaSelecionada && (
               <>
+<<<<<<< HEAD
                 <Typography variant="h6">{turmaSelecionada.Nome}</Typography>
                 <Typography>
                   Série: {turmaSelecionada.Serie} | Ano: {turmaSelecionada.AnoLetivo}
@@ -430,9 +471,14 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
                 <Typography>
                   Turno: {turmaSelecionada.Turno} | Sala: {turmaSelecionada.Sala}
                 </Typography>
+=======
+                <Typography variant="h6" sx={{ mb: 1 }}>{turmaSelecionada.Nome}</Typography>
+                <Typography>Série: {turmaSelecionada.Serie} | Ano: {turmaSelecionada.AnoLetivo}</Typography>
+                <Typography>Turno: {turmaSelecionada.Turno} | Sala: {turmaSelecionada.Sala}</Typography>
+>>>>>>> c3ba902082a8f24951e46bcfa1dc1f75de15dc45
 
                 <Typography sx={{ mt: 2, fontWeight: "bold" }}>Alunos:</Typography>
-                <ul className="list-disc list-inside max-h-40 overflow-y-auto">
+                <ul className="list-disc list-inside max-h-64 overflow-y-auto">
                   {turmaSelecionada.alunos?.length ? (
                     turmaSelecionada.alunos.map((a) => <li key={a.Id}>{a.Nome}</li>)
                   ) : (
@@ -441,12 +487,16 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
                 </ul>
 
                 <Typography sx={{ mt: 2, fontWeight: "bold" }}>Disciplinas e Professores:</Typography>
-                <ul className="list-disc list-inside max-h-40 overflow-y-auto">
+                <ul className="list-disc list-inside max-h-64 overflow-y-auto">
                   {turmaSelecionada.disciplinas?.length ? (
                     turmaSelecionada.disciplinas.map((d) => {
+<<<<<<< HEAD
                       const profId = turmaSelecionada.professores?.find((p) =>
                         p.Disciplinas.includes(d.Id)
                       )?.Id;
+=======
+                      const profId = turmaSelecionada.professores?.find((p) => p.Disciplinas.includes(d.Id.toString()))?.Id;
+>>>>>>> c3ba902082a8f24951e46bcfa1dc1f75de15dc45
                       const prof = professores.find((p) => p.Id === profId);
                       return (
                         <li key={d.Id}>
@@ -461,6 +511,7 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
               </>
             )}
             {turmaSelecionada && (
+<<<<<<< HEAD
               <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
                 <Button onClick={() => handleOpenEditar()} sx={{ mr: 2 }}>
                   Editar
@@ -469,6 +520,12 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
                   Excluir
                 </Button>
                 <Button onClick={handleCloseDetalhes}>Fechar</Button>
+=======
+              <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3, gap: 2 }}>
+                <Button variant="outlined" onClick={handleOpenEditar}>Editar</Button>
+                <Button variant="outlined" color="error" onClick={() => handleDeleteTurma(turmaSelecionada)}>Excluir</Button>
+                <Button variant="contained" onClick={handleCloseDetalhes}>Fechar</Button>
+>>>>>>> c3ba902082a8f24951e46bcfa1dc1f75de15dc45
               </Box>
             )}
           </Box>
@@ -523,7 +580,6 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
               onChange={(e) => handleEditChange("CapacidadeMaxima", Number(e.target.value))}
             />
 
-            {/* Seleção de professores por disciplina */}
             <Typography sx={{ fontWeight: 600 }}>Professores por disciplina:</Typography>
             {editTurma?.disciplinas?.map((d) => (
               <Box key={d.Id} sx={{ mb: 2 }}>
@@ -547,6 +603,7 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
                 >
                   <option value="">Selecione um professor</option>
                   {professores.map((prof) => (
+<<<<<<< HEAD
                     <option
                       key={prof.Id}
                       value={prof.Id}
@@ -554,28 +611,32 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
                     >
                       {prof.Nome} {!isProfessorDisponivelNoTurno(prof.Id, editTurma?.Turno || "") && professoresPorDisciplina[d.Id] !== prof.Id ? "(Indisponível no turno)" : ""}
                     </option>
+=======
+                    <option key={prof.Id} value={prof.Id}>{prof.Nome}</option>
+>>>>>>> c3ba902082a8f24951e46bcfa1dc1f75de15dc45
                   ))}
                 </select>
               </Box>
             ))}
 
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-              <Button variant="outlined" onClick={handleCloseEditar}>
-                Cancelar
-              </Button>
-              <Button variant="contained" onClick={salvarAlteracoes}>
-                Salvar
-              </Button>
+              <Button variant="outlined" onClick={handleCloseEditar}>Cancelar</Button>
+              <Button variant="contained" onClick={salvarAlteracoes}>Salvar</Button>
             </Box>
           </Box>
         </Modal>
 
         {/* Modal Criar */}
         <Modal open={openCriar} onClose={() => setOpenCriar(false)}>
+<<<<<<< HEAD
           <Box sx={{ maxWidth: 700, width: "100%", borderRadius: 3, p: 4 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, color: "#4F46E5", mb: 3 }}>
               Criar nova turma
             </Typography>
+=======
+          <Box sx={{ ...styleModal, maxWidth: 600 }}>
+            <Typography variant="h5" sx={{ mb: 4, fontWeight: 700, color: "#4F46E5" }}>Criar turma</Typography>
+>>>>>>> c3ba902082a8f24951e46bcfa1dc1f75de15dc45
 
             {/* FORMULÁRIO */}
             <Grid>
@@ -590,6 +651,7 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
                 />
               </Grid>
 
+<<<<<<< HEAD
               <Grid>
                 <TextField
                   select
@@ -770,6 +832,71 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
                       style={{ marginRight: 8 }}
                     />
                     <Typography variant="body2">{d.Nome}</Typography>
+=======
+            <Typography sx={{ fontWeight: 600 }}>Selecione os alunos:</Typography>
+            <Box sx={{ maxHeight: 150, overflowY: "auto", mb: 3, border: "1px solid #e5e7eb", borderRadius: 1, p: 2 }}>
+              {alunos.map((a) => (
+                <label key={a.RA} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedAlunos.some((al) => al.RA === a.RA)}
+                    onChange={() => {
+                      if (selectedAlunos.some((al) => al.RA === a.RA)) {
+                        setSelectedAlunos(selectedAlunos.filter((al) => al.RA !== a.RA));
+                      } else {
+                        setSelectedAlunos([...selectedAlunos, a]);
+                      }
+                    }}
+                  />
+                  {a.Nome}
+                </label>
+              ))}
+            </Box>
+
+            <Typography sx={{ fontWeight: 600 }}>Selecione as disciplinas:</Typography>
+            <Box sx={{ maxHeight: 150, overflowY: "auto", mb: 3, border: "1px solid #e5e7eb", borderRadius: 1, p: 2 }}>
+              {disciplinas.map((d) => (
+                <label key={d.Codigo} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedDisciplinas.some((disc) => disc.Codigo === d.Codigo)}
+                    onChange={() => {
+                      if (selectedDisciplinas.some((disc) => disc.Codigo === d.Codigo)) {
+                        setSelectedDisciplinas(selectedDisciplinas.filter((disc) => disc.Codigo !== d.Codigo));
+                        const copy = { ...professoresPorDisciplina };
+                        delete copy[d.Id];
+                        setProfessoresPorDisciplina(copy);
+                      } else {
+                        setSelectedDisciplinas([...selectedDisciplinas, d]);
+                      }
+                    }}
+                  />
+                  {d.Nome}
+                </label>
+              ))}
+            </Box>
+
+            {selectedDisciplinas.length > 0 && (
+              <>
+                <Typography sx={{ fontWeight: 600 }}>Professores por disciplina:</Typography>
+                {selectedDisciplinas.map((d) => (
+                  <Box key={d.Id} sx={{ mb: 2 }}>
+                    <Typography>{d.Nome}</Typography>
+                    <select
+                      value={professoresPorDisciplina[d.Id] || ""}
+                      onChange={(e) =>
+                        setProfessoresPorDisciplina({
+                          ...professoresPorDisciplina,
+                          [d.Id]: Number(e.target.value),
+                        })
+                      }
+                    >
+                      <option value="">Selecione um professor</option>
+                      {professores.map((prof) => (
+                        <option key={prof.Id} value={prof.Id}>{prof.Nome}</option>
+                      ))}
+                    </select>
+>>>>>>> c3ba902082a8f24951e46bcfa1dc1f75de15dc45
                   </Box>
                 ))}
               </Box>
@@ -832,10 +959,16 @@ export default function TodasTurmasPage({ usuario }: { usuario: Usuario }) {
         {/* Botão flutuante Criar */}
         <Box
           onClick={() => setOpenCriar(true)}
+<<<<<<< HEAD
           className="fixed bottom-6 right-6 bg-indigo-600 text-white p-5 rounded-full shadow-lg cursor-pointer hover:bg-indigo-700 transition-colors"
           style={{ userSelect: "none" }}
         >
           <FaPlus size={20} />
+=======
+          className="fixed bottom-6 right-6 bg-indigo-600 text-white p-5 rounded-full shadow-xl cursor-pointer hover:bg-indigo-700 transition-transform transform hover:scale-110 flex items-center justify-center"
+        >
+          <FaPlus size={24} />
+>>>>>>> c3ba902082a8f24951e46bcfa1dc1f75de15dc45
         </Box>
       </main>
     </div>

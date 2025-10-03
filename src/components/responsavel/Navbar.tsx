@@ -17,6 +17,8 @@ interface AlunoPageProps {
 export default function Navbar({usuario}:AlunoPageProps){    
       const router = useRouter();
 
+      const goToAtividade = () => router.push(`/reponsavel/atividade/${usuario.Id}`);
+      const goToGradeCurricular = () => router.push(`/responsavel/grade-curricular/${usuario.Id}`);
       const goToProva = () => router.push(`/responsavel/prova/${usuario.Id}`);
       const goToBoletim = () => router.push(`/responsavel/boletim/${usuario.Id}`);
 
@@ -36,6 +38,14 @@ return (
       {/* Menu */}
       <nav style={{ flex: 1, marginTop: 16 }}>
         <ul style={styles.menuList}>
+          <li style={styles.menuItem} onClick={goToAtividade} tabIndex={0} role="button" aria-label="Atividades">
+            <FaCalendarAlt style={styles.icon} />
+            <span>Atividades</span>
+          </li>
+          <li style={styles.menuItem} onClick={goToGradeCurricular} tabIndex={0} role="button" aria-label="Notas">
+            <SiVbulletin style={styles.icon} />
+            <span>Grade Curricular</span>
+          </li>
           <li style={styles.menuItem} onClick={goToProva} tabIndex={0} role="button" aria-label="Provas">
             <FaUsers style={styles.icon} />
             <span>Provas</span>
@@ -123,64 +133,71 @@ const LogoutIcon = () => (
   </svg>
 );
 
+
 const styles: { [key: string]: React.CSSProperties } = {
   sidebar: {
     position: "fixed",
     top: 0,
     left: 0,
-    width: 260,
+    width: 250,
     height: "100vh",
-    backgroundColor: "#FFD600",
-    color: "white",
-    padding: 24,
+    backgroundColor: "#34495E",
+    color: "#FFFFFF",
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
-    boxShadow: "2px 0 8px rgba(0, 0, 0, 0.15)",
+    padding: 20,
+    boxShadow: "2px 0 8px rgba(0, 0, 0, 0.2)",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    userSelect: "none",
   },
   topSection: {
     textAlign: "center",
+    marginBottom: 30,
   },
   userName: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: 700,
     marginTop: 12,
-    letterSpacing: 1,
-    textShadow: "0 1px 4px rgba(0,0,0,0.2)",
+    letterSpacing: 0.5,
+    color: "#FFFFFF",
   },
   menuList: {
     listStyle: "none",
     padding: 0,
-    marginTop: 40,
   },
   menuItem: {
-    margin: "18px 0",
-    cursor: "pointer",
     display: "flex",
     alignItems: "center",
-    fontSize: 18,
-    fontWeight: 600,
-    transition: "color 0.3s, transform 0.2s",
-    userSelect: "none",
+    padding: "8px 0", // um pouco menor
+    fontSize: 16,
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "all 0.2s ease",
   },
   icon: {
-    fontSize: 24,
-    marginRight: 12,
-    flexShrink: 0,
+    fontSize: 18, // menor
+    marginRight: 10, // menor espaço
+  },
+  menuItemHover: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 6,
+  },
+  footer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12, // aumenta o espaçamento entre botões do rodapé
+    marginTop: 24, // afasta do menu acima
   },
   footerButton: {
-    background: "none",
-    border: "none",
-    color: "white",
-    cursor: "pointer",
     display: "flex",
     alignItems: "center",
+    background: "transparent",
+    border: "none",
+    color: "#FFFFFF",
+    cursor: "pointer",
+    fontSize: 14,
+    padding: "6px 8px",
     borderRadius: 6,
-    fontWeight: 400,
-    fontSize: 15,
-    transition: "background-color 0.3s",
-    width: "100%",
+    transition: "background-color 0.2s ease",
   },
 };

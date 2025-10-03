@@ -16,21 +16,11 @@ interface AlunoPageProps {
 
 const Turmas: React.FC<AlunoPageProps> = ({ usuario, turmas }) => {
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
-  const router = useRouter(); // Initialize useRouter
   const turma = turmas[0];
 
   useEffect(() => {
     setDisciplinas(turma?.disciplinas ?? []);
   }, [turma]);
-
-  const handleConteudoClick = (disciplina: Disciplina) => {
-    router.push(`/disciplina/${disciplina.Id}/conteudo`); // Use router.push for navigation
-  };
-
-  const handleNotasClick = (disciplina: Disciplina) => {
-    console.log('Acessar notas de:', disciplina.Nome);
-    router.push(`/disciplina/${disciplina.Id}/notas`); // Use router.push for navigation
-  };
 
   return (
     <div style={{ display: 'flex', maxWidth: "100%", width: '100%', height: '90vh', fontFamily: 'Arial, sans-serif' }}>
@@ -67,7 +57,7 @@ const Turmas: React.FC<AlunoPageProps> = ({ usuario, turmas }) => {
               padding: '24px',
               textAlign: 'center',
               flex: '0 0 calc(25% - 20px)', // Ajuste para 25% para mais cards em telas grandes
-              minHeight: '220px',
+              minHeight: '100px',
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
               transition: 'transform 0.3s ease, box-shadow 0.3s ease',
               position: 'relative',
@@ -118,66 +108,6 @@ const Turmas: React.FC<AlunoPageProps> = ({ usuario, turmas }) => {
             }}>
               {disciplina.Nome}
             </h3>
-
-            <div style={{
-              display: 'flex',
-              gap: '12px',
-              justifyContent: 'center'
-            }}>
-              <button 
-                onClick={() => handleConteudoClick(disciplina)}
-                style={{
-                  flex: 1,
-                  padding: '10px 16px',
-                  background: 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s ease',
-                  fontWeight: '500',
-                  fontSize: '0.9em',
-                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                aria-label={`Acessar conteúdo de ${disciplina.Nome}`} // Acessibilidade
-              >
-                <i className="fas fa-file-alt" style={{ fontSize: '0.9em' }}></i>
-                Conteúdo
-              </button>
-              
-              <button 
-                onClick={() => handleNotasClick(disciplina)}
-                style={{
-                  flex: 1,
-                  padding: '10px 16px',
-                  background: 'linear-gradient(135deg, #2196F3 0%, #0d47a1 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s ease',
-                  fontWeight: '500',
-                  fontSize: '0.9em',
-                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                aria-label={`Acessar notas de ${disciplina.Nome}`} // Acessibilidade
-              >
-                <i className="fas fa-chart-bar" style={{ fontSize: '0.9em' }}></i>
-                Notas
-              </button>
-            </div>
 
             <div style={{
               position: 'absolute',

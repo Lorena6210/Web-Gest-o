@@ -4,6 +4,8 @@ import React from "react";
 import { TurmaCompleta } from "@/lib/TurmaApi";
 import { Prova } from "@/lib/provaApi";
 import { NotaProva } from "@/lib/NotasApi";
+import Navbar from "../Navbar"
+import { Box } from "@mui/material";
 
 interface Usuario {
   Nome: string;
@@ -45,9 +47,9 @@ export default function ResponsavelBoletimPage({
   });
 
   return (
+    <Box>
+      <Navbar Usuario={usuario}/>
     <div>
-      <h1>Boletim Escolar - {usuario.Nome}</h1>
-
       <h2>Turmas</h2>
       <ul>
         {turmas.map((turma) => (
@@ -78,5 +80,6 @@ export default function ResponsavelBoletimPage({
         </div>
       ))}
     </div>
+    </Box>
   );
 }
