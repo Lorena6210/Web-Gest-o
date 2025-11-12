@@ -117,81 +117,169 @@ export default function GestorEventosPage({ usuario }: Props) {
   };
 
   return (
-    <Box sx={{ p: 4 }}>
+    <Box sx={{ p: 4, bgcolor: "#f3f4f6", minHeight: "100vh", marginLeft: "320px", maxWidth: "1024px" }}>
       <Navbar usuario={usuario} />
-      <Typography variant="h4" gutterBottom style={{display: "flex", justifyContent: "center"}}>
-        Criar Evento
-      </Typography>
 
-    <Box sx={{ display: "flex", flexDirection: "column", width: "100%", maxWidth:"1024PX", position: "relative", left: "20%"}}>
-      <Input
-        placeholder="Título"
-        value={titulo}
-        onChange={(e) => setTitulo(e.target.value)}
-        sx={{ display: "block", my: 2 }}
-      />
-      <Input
-        placeholder="Descrição"
-        value={descricao}
-        onChange={(e) => setDescricao(e.target.value)}
-        sx={{ display: "block", my: 2 }}
-      />
-      <Input
-        type="date"
-        value={data}
-        onChange={(e) => setData(e.target.value)}
-        sx={{ display: "block", my: 2 }}
-      />
-
-      <Select
-        value={responsavelSelecionado || ""}
-        onChange={(e) => setResponsavelSelecionado(Number(e.target.value))}
-        displayEmpty
-        sx={{ display: "block", my: 2, minWidth: 200 }}
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{ display: "flex", justifyContent: "center", color: "#4f46e5", fontWeight: 700, mb: 4 }}
       >
-        <MenuItem value="">Selecione um responsável</MenuItem>
-        {responsaveis.map((resp) => (
-          <MenuItem key={resp.Id} value={resp.Id}>
-            {resp.Nome}
-          </MenuItem>
-        ))}
-      </Select>
-
-      <Button variant="contained" onClick={handleCriarEvento} sx={{ mb: 4 }}>
         Criar Evento
-      </Button>
-
-      <Typography variant="h5" gutterBottom>
-        Lista de Eventos
       </Typography>
 
-      <Paper sx={{ maxHeight: 300, overflow: "auto", p: 2 }}>
-        <List>
-          {eventos.map((evento) => (
-            <ListItem key={evento.Id} divider>
-              <ListItemText
-                primary={`${evento.Titulo} - ${evento.Data}`}
-                secondary={`${evento.Descricao} | Responsável: ${evento.Responsavel} | Criado por: ${evento.CriadoPor}`}
-              />
-            </ListItem>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 3,
+          bgcolor: "#ffffff",
+          p: 4,
+          borderRadius: 3,
+          boxShadow: 4,
+        }}
+      >
+        {/* Inputs */}
+        <Input
+          placeholder="Título"
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+          sx={{
+            display: "block",
+            my: 1.5,
+            p: 1.5,
+            borderRadius: 2,
+            border: "1px solid #d1d5db",
+            "&:focus": { borderColor: "#4f46e5", boxShadow: "0 0 0 2px rgba(79, 70, 229, 0.2)" },
+          }}
+        />
+        <Input
+          placeholder="Descrição"
+          value={descricao}
+          onChange={(e) => setDescricao(e.target.value)}
+          sx={{
+            display: "block",
+            my: 1.5,
+            p: 1.5,
+            borderRadius: 2,
+            border: "1px solid #d1d5db",
+            "&:focus": { borderColor: "#4f46e5", boxShadow: "0 0 0 2px rgba(79, 70, 229, 0.2)" },
+          }}
+        />
+        <Input
+          type="date"
+          value={data}
+          onChange={(e) => setData(e.target.value)}
+          sx={{
+            display: "block",
+            my: 1.5,
+            p: 1.5,
+            borderRadius: 2,
+            border: "1px solid #d1d5db",
+            "&:focus": { borderColor: "#4f46e5", boxShadow: "0 0 0 2px rgba(79, 70, 229, 0.2)" },
+          }}
+        />
+
+        {/* Select Responsável */}
+        <Select
+          value={responsavelSelecionado || ""}
+          onChange={(e) => setResponsavelSelecionado(Number(e.target.value))}
+          displayEmpty
+          sx={{
+            display: "block",
+            my: 2,
+            minWidth: 200,
+            borderRadius: 2,
+            border: "1px solid #d1d5db",
+            "&:focus": { borderColor: "#4f46e5", boxShadow: "0 0 0 2px rgba(79, 70, 229, 0.2)" },
+          }}
+        >
+          <MenuItem value="">Selecione um responsável</MenuItem>
+          {responsaveis.map((resp) => (
+            <MenuItem key={resp.Id} value={resp.Id}>
+              {resp.Nome}
+            </MenuItem>
           ))}
-          {eventos.length === 0 && (
-            <Typography variant="body2" color="text.secondary">
-              Nenhum evento encontrado.
-            </Typography>
-          )}
-        </List>
-      </Paper>
+        </Select>
 
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={() => setSnackbarOpen(false)}
-      >
-        <MuiAlert severity={snackbarSeverity} variant="filled">
-          {snackbarMessage}
-        </MuiAlert>
-      </Snackbar>
+        {/* Botão Criar */}
+        <Button
+          variant="contained"
+          onClick={handleCriarEvento}
+          sx={{
+            mb: 4,
+            bgcolor: "#4f46e5",
+            "&:hover": { bgcolor: "#4338ca" },
+            borderRadius: 2,
+            py: 1.5,
+            fontWeight: 600,
+          }}
+        >
+          Criar Evento
+        </Button>
+
+        {/* Lista de Eventos */}
+        <Typography variant="h5" gutterBottom sx={{ color: "#374151", fontWeight: 600 }}>
+          Lista de Eventos
+        </Typography>
+
+        <Paper sx={{ maxHeight: 300, overflow: "auto", p: 2, borderRadius: 2, boxShadow: 3 }}>
+          <List>
+            {eventos.map((evento) => (
+              <ListItem
+                key={evento.Id}
+                divider
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  borderRadius: 2,
+                  mb: 1,
+                  opacity: evento.Status === "Desativado" ? 0.5 : 1, // Opaco se desativado
+                  "&:hover": { bgcolor: "#f3f4f6" },
+                }}
+              >
+                {/* Ícone do evento */}
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    bgcolor: "#4f46e5",
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {evento.Titulo.charAt(0)}
+                </Box>
+
+                <ListItemText
+                  primary={`${evento.Titulo} - ${evento.Data}`}
+                  secondary={`${evento.Descricao} | Responsável: ${evento.Responsavel} | Criado por: ${evento.CriadoPor}`}
+                />
+              </ListItem>
+            ))}
+            {eventos.length === 0 && (
+              <Typography variant="body2" color="text.secondary">
+                Nenhum evento encontrado.
+              </Typography>
+            )}
+          </List>
+        </Paper>
+
+        {/* Snackbar */}
+        <Snackbar
+          open={snackbarOpen}
+          autoHideDuration={4000}
+          onClose={() => setSnackbarOpen(false)}
+        >
+          <MuiAlert severity={snackbarSeverity} variant="filled">
+            {snackbarMessage}
+          </MuiAlert>
+        </Snackbar>
       </Box>
     </Box>
   );

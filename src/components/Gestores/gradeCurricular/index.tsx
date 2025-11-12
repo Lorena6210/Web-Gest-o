@@ -60,14 +60,30 @@ export default function GestorGradeCurricular({
   return (
     <Box>
       <Navbar usuario={usuario} />
-      <Box sx={{ mb: 3, mt: 2, marginLeft: "320px", paddingRight: "40px" }}>
-        <Typography variant="h5" gutterBottom>
+
+      {/* Container principal */}
+      <Box
+        sx={{
+          mb: 3,
+          mt: 2,
+          ml: "320px",
+          pr: "40px",
+          maxWidth: "1024px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+        }}
+      >
+        <Typography
+          variant="h5"
+          gutterBottom
+          sx={{ fontWeight: 700, color: "#4F46E5" }}
+        >
           Grades Curriculares por Bimestre
         </Typography>
 
         {gradeCurricular?.map((grade) => {
           const disciplinas = grade.Disciplinas || [];
-
           if (disciplinas.length === 0) return null;
 
           const turmasIds = Array.from(
@@ -78,7 +94,6 @@ export default function GestorGradeCurricular({
             const disciplinasDaTurma = disciplinas.filter(
               (d) => d.Id_Turma === turmaId
             );
-
             const turma = turmas?.find((t) => t.Id === turmaId);
             const nomeTurma = turma?.Nome || `Turma ${turmaId}`;
             const serieTurma = turma?.Serie || "-";
@@ -90,28 +105,62 @@ export default function GestorGradeCurricular({
             return (
               <Paper
                 key={`${grade.Id_GradeCurricular}-${turmaId}`}
-                sx={{ mb: 4, p: 2 }}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                  },
+                }}
               >
-                <Typography variant="h6" gutterBottom>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, color: "#4F46E5", mb: 2 }}
+                >
                   {grade.Descricao_Grade} - {nomeTurma} ({serieTurma})
                 </Typography>
 
-                <Divider sx={{ my: 2 }} />
+                <Divider sx={{ my: 2, borderColor: "#E5E7EB" }} />
 
                 {bimestres.map((bimestre) => {
                   const disciplinasFiltradas = disciplinasDaTurma.filter(
                     (d) => d.Bimestre === bimestre
                   );
-
                   if (disciplinasFiltradas.length === 0) return null;
 
                   return (
                     <Box key={bimestre} sx={{ mt: 2 }}>
-                      <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ fontWeight: 600, mb: 1 }}
+                      >
                         {bimestre}º Bimestre
                       </Typography>
 
-                      <Table size="small">
+                      <Table
+                        size="small"
+                        sx={{
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          "& th": {
+                            backgroundColor: "#EDE9FE",
+                            color: "#4F46E5",
+                            fontWeight: 600,
+                            px: 2,
+                            py: 1,
+                          },
+                          "& td": {
+                            px: 2,
+                            py: 1,
+                          },
+                          "& tr:hover": {
+                            backgroundColor: "#F3F4F6",
+                          },
+                        }}
+                      >
                         <TableHead>
                           <TableRow>
                             <TableCell>Código</TableCell>
@@ -142,3 +191,4 @@ export default function GestorGradeCurricular({
     </Box>
   );
 }
+

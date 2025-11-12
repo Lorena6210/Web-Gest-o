@@ -1,18 +1,22 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaUser, FaIdBadge, FaSchool } from "react-icons/fa";
 import { fetchAlunos, createAluno, updateAluno, deleteAluno } from "@/lib/AlunoApi";
-import { TurmaCompleta } from "@/lib/TurmaApi";
+// import { TurmaCompleta } from "@/lib/TurmaApi";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
-import Input from "@mui/material/Input";
+import TextField from "@mui/material/TextField";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert, { AlertColor } from "@mui/material/Alert";
 import Navbar from "../../Navbar";
-import styles from "../css/TodasAlunosPage.module.css";
-import { Radio, RadioGroup, FormControl, FormControlLabel, FormLabel } from "@mui/material";
+import styles from "../css/TodasAlunosPage.module.css"; // Assumindo que você tem um arquivo de estilos
+// import { Radio, RadioGroup, FormControlLabel, FormLabel } from "@mui/material";
 
 interface AlunoAPI {
   Id: number;
@@ -68,14 +72,14 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [turmas, setTurmas] = useState<MeuComponenteProps[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState(""); // Adicionado para busca
 
-  // Modais
   const [openCriar, setOpenCriar] = useState(false);
   const [openEditar, setOpenEditar] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [alunoSelecionado, setAlunoSelecionado] = useState<Aluno | null>(null);
   const [editMode, setEditMode] = useState(false);
 
-  // Snackbar
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<AlertColor>("success");
@@ -86,7 +90,6 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
     setSnackbarOpen(true);
   };
 
-  // Novo aluno
   const [novoAluno, setNovoAluno] = useState<Aluno>({
     Id: 0,
     Nome: "",
@@ -101,24 +104,15 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
     TurmaId: undefined,
   });
 
-  // Carregar alunos + turmas
   useEffect(() => {
     const carregarDados = async () => {
       try {
         const alunosAPI: AlunoAPI[] = await fetchAlunos();
-
-        if (!alunosAPI) {
-          showSnackbar("Erro ao carregar alunos", "error");
-          return;
-        }
-
-        // Buscar todas as turmas
         const response = await fetch("http://localhost:3001/turmas/");
         const dados = await response.json();
 
         if (dados.success && Array.isArray(dados.turmas)) {
           const turmasData: TurmaCompleta[] = dados.turmas;
-
           setTurmas(
             turmasData.map((t: TurmaCompleta) => ({
               Id: t.Id,
@@ -126,22 +120,12 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
             }))
           );
 
-          // Associar RA -> TurmaId
           const alunosComTurma: Aluno[] = alunosAPI.map((aluno: AlunoAPI) => {
             const turmaEncontrada = turmasData.find((turma: TurmaCompleta) =>
               turma.alunos?.some((a: AlunoAPI) => a.RA === aluno.RA)
             );
             return {
-              Id: aluno.Id,
-              Nome: aluno.Nome,
-              CPF: aluno.CPF,
-              Senha: aluno.Senha,
-              Telefone: aluno.Telefone,
-              DataNascimento: aluno.DataNascimento,
-              Genero: aluno.Genero,
-              FotoPerfil: aluno.FotoPerfil,
-              Status: aluno.Status,
-              RA: aluno.RA,
+              ...aluno,
               TurmaId: turmaEncontrada ? turmaEncontrada.Id : undefined,
             };
           });
@@ -180,8 +164,8 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
         RA: "",
         TurmaId: undefined,
       });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.error(error);
       showSnackbar("Erro ao cadastrar aluno", "error");
     }
   };
@@ -190,14 +174,12 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
     if (!alunoSelecionado) return;
     try {
       const alunoAtualizado = await updateAluno(alunoSelecionado);
-      setAlunos((prev) =>
-        prev.map((a) => (a.Id === alunoAtualizado.Id ? alunoAtualizado : a))
-      );
+      setAlunos((prev) => prev.map((a) => (a.Id === alunoAtualizado.Id ? alunoAtualizado : a)));
       showSnackbar("Aluno atualizado com sucesso!", "success");
       setOpenEditar(false);
       setEditMode(false);
+   // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.error(error);
       showSnackbar("Erro ao atualizar aluno", "error");
     }
   };
@@ -209,253 +191,233 @@ export default function TodasAlunosPage({ usuario }: { usuario: Usuario }) {
       await deleteAluno(id);
       setAlunos((prev) => prev.filter((a) => a.Id !== id));
       showSnackbar("Aluno excluído com sucesso!", "success");
-      setOpenEditar(false);
+      setOpenView(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.error(error);
       showSnackbar("Erro ao excluir aluno", "error");
     }
   };
 
+  const alunosFiltrados = alunos.filter(
+    (aluno) =>
+      (aluno.Nome || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (aluno.RA || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (aluno.CPF || "").toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className={`flex flex-col h-screen w-full ${styles["page-container"]}`}>
-      <Navbar usuario={usuario} style={{ position: "relative", top: 0, left: 0, right: 0 }} />
+    <div style={{ width: "1024px", flexDirection: "row", marginLeft: "340px", marginRight: "auto" }} className={`flex flex-col h-screen w-full ${styles["page-container"]}`}>
+      <Navbar usuario={usuario} />
       <main className={styles["main-content"]}>
-        <h1 className={styles["page-title"]}>Todos os Alunos</h1>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" sx={{ fontWeight: "bold", color: "#4F46E5", mb: 1 }}>
+            Gestão de Alunos
+          </Typography>
+          <Typography sx={{ color: "#6B7280", mb: 2 }}>Gerencie todos os alunos cadastrados no sistema</Typography>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Box sx={{ background: "#fff", padding: 2, borderRadius: 2, boxShadow: 1, border: "1px solid #E5E7EB" }}>
+              <Typography sx={{ color: "#6B7280", fontSize: "0.875rem" }}>Total de Alunos</Typography>
+              <Typography sx={{ fontSize: "1.875rem", fontWeight: "bold", color: "#3B82F6" }}>{alunos.length}</Typography>
+            </Box>
+          </Box>
+          <TextField
+            placeholder="Buscar aluno por nome, RA ou CPF..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{
+              width: "100%",
+              padding: "0.75rem 1rem",
+              borderRadius: "12px",
+              border: "2px solid #E5E7EB",
+              background: "#fff",
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": { border: "none" },
+                "&:hover fieldset": { border: "none" },
+                "&.Mui-focused fieldset": { border: "none" },
+              },
+              "&:focus": { borderColor: "#3B82F6", boxShadow: "0 0 0 4px rgba(59, 130, 246, 0.1)" },
+            }}
+            // InputProps={{
+            //   startAdornment: <Box sx={{ position: "absolute", left: "%", top: "50%", transform: "translateY(-50%)", color: "#9CA3AF" }}><FaUser /></Box>,
+            // }}
+          />
+        </Box>
 
         {loading ? (
-          <div className={styles["loading-container"]}>
-            <div className={styles["loading-spinner"]}></div>
-            <p className={styles["loading-text"]}>Carregando alunos...</p>
-          </div>
-        ) : alunos.length > 0 ? (
-          <div className={styles["alunos-grid"]}>
-            {alunos.map((aluno) => (
-              <div
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 8 }}>
+            <Box sx={{ width: 64, height: 64, border: "4px solid #D1D5DB", borderTop: "4px solid #3B82F6", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+            <Typography sx={{ color: "#6B7280", mt: 2 }}>Carregando alunos...</Typography>
+          </Box>
+        ) : alunosFiltrados.length > 0 ? (
+          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: 3 }}>
+            {alunosFiltrados.map((aluno) => (
+              <Box
                 key={aluno.Id}
-                className={`${styles["aluno-card"]} cursor-pointer`}
-                onClick={() => {
-                  setAlunoSelecionado(aluno);
-                  setOpenEditar(true);
-                  setEditMode(false);
+                sx={{
+                  background: "#fff",
+                  borderRadius: 2,
+                  p: 3,
+                  boxShadow: 2,
+                  cursor: "pointer",
+                  transition: "all 0.3s",
+                  "&:hover": { boxShadow: 4, transform: "scale(1.02)", borderColor: "#3B82F6" },
+                  border: "1px solid #E5E7EB",
                 }}
+                onClick={() => { setAlunoSelecionado(aluno); setOpenView(true); }}
               >
-                <h2 className={styles["aluno-nome"]}>{aluno.Nome}</h2>
-                <p className={styles["aluno-info"]}>RA: {aluno.RA}</p>
-                <p className={styles["aluno-info"]}>{aluno.CPF}</p>
-                <p className={styles["aluno-status"]}>Status: {aluno.Status}</p>
-                <p className={styles["aluno-info"]}>
-                  Turma: {turmas.find((t) => t.Id === aluno.TurmaId)?.turma.Nome || "Sem turma"}
-                </p>
-              </div>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+                  <Box sx={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #3B82F6 0%, #6366F1 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "bold", fontSize: "1.25rem" }}>
+                    {aluno.Nome.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()}
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontWeight: "bold", color: "#1F2937" }}>{aluno.Nome}</Typography>
+                    <Typography sx={{ color: aluno.Status === "Ativo" ? "#10B981" : "#EF4444", fontSize: "0.875rem" }}>{aluno.Status}</Typography>
+                  </Box>
+                </Box>
+                <Typography sx={{ display: "flex", alignItems: "center", gap: 1, color: "#6B7280" }}><FaIdBadge /> RA: <span sx={{ fontWeight: "bold", color: "#1F2937" }}>{aluno.RA}</span></Typography>
+                <Typography sx={{ display: "flex", alignItems: "center", gap: 1, color: "#6B7280" }}><FaIdBadge /> CPF: {aluno.CPF}</Typography>
+                <Typography sx={{ display: "flex", alignItems: "center", gap: 1, color: "#6B7280" }}><FaSchool /> Turma: {turmas.find(t => t.Id === aluno.TurmaId)?.turma.Nome || "Sem turma"}</Typography>
+              </Box>
             ))}
-          </div>
+          </Box>
         ) : (
-          <div className={styles["empty-state"]}>
-            <p>Nenhum aluno encontrado.</p>
-          </div>
+          <Box sx={{ textAlign: "center", p: 4, background: "#fff", borderRadius: 2, boxShadow: 1 }}>
+            <FaSchool sx={{ fontSize: "48px", color: "#9CA3AF", mb: 2 }} />
+            <Typography sx={{ fontWeight: "bold", color: "#1F2937" }}>Nenhum aluno encontrado</Typography>
+            <Typography sx={{ color: "#6B7280" }}>Tente buscar com outros termos</Typography>
+          </Box>
         )}
 
         {/* Modal Criar */}
         <Modal open={openCriar} onClose={() => setOpenCriar(false)}>
-          <Box className={styles["modal-box"]}>
-            <Typography variant="h6" className={styles["modal-title"]}>
-              Cadastrar Aluno
-            </Typography>
-            <Input
-              placeholder="Nome"
-              value={novoAluno.Nome}
-              onChange={(e) => setNovoAluno({ ...novoAluno, Nome: e.target.value })}
-              className={styles["modal-input"]}
-            />
-            <Input
-              placeholder="RA"
-              value={novoAluno.RA}
-              onChange={(e) => setNovoAluno({ ...novoAluno, RA: e.target.value })}
-              className={styles["modal-input"]}
-            />
-            <Input
-              placeholder="CPF"
-              value={novoAluno.CPF}
-              onChange={(e) => setNovoAluno({ ...novoAluno, CPF: e.target.value })}
-              className={styles["modal-input"]}
-            />
-            <Input
-              placeholder="Senha"
-              type="password"
-              value={novoAluno.Senha}
-              onChange={(e) => setNovoAluno({ ...novoAluno, Senha: e.target.value })}
-              className={styles["modal-input"]}
-            />
-            <Input
-              placeholder="Data de Nascimento"
-              type="date"
-              value={novoAluno.DataNascimento}
-              onChange={(e) => setNovoAluno({ ...novoAluno, DataNascimento: e.target.value })}
-              className={styles["modal-input"]}
-            />
-            <Input
-              placeholder="Telefone"
-              value={novoAluno.Telefone}
-              onChange={(e) => setNovoAluno({ ...novoAluno, Telefone: e.target.value })}
-              className={styles["modal-input"]}
-            />
-
-            <FormControl className={styles["modal-form-control"]}>
-              <FormLabel>Gênero</FormLabel>
-              <RadioGroup
-                row
-                value={novoAluno.Genero}
-                onChange={(e) => setNovoAluno({ ...novoAluno, Genero: e.target.value })}
-                className={styles["modal-radio-group"]}
-              >
-                <FormControlLabel value="Masculino" control={<Radio />} label="Masculino" />
-                <FormControlLabel value="Feminino" control={<Radio />} label="Feminino" />
-              </RadioGroup>
-            </FormControl>
-
-            <Button fullWidth className={styles["modal-button"]} onClick={salvarNovoAluno}>
-              Salvar
-            </Button>
+          <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "#fff", p: 4, borderRadius: 3, maxWidth: 600, width: "90%", maxHeight: "90vh", overflowY: "auto", boxShadow: 5 }}>
+            <Typography variant="h5" sx={{ fontWeight: "bold", color: "#4F46E5", mb: 3 }}>Cadastrar Novo Aluno</Typography>
+            <Box component="form" sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 3 }}>
+              <TextField label="Nome Completo" value={novoAluno.Nome} onChange={(e) => setNovoAluno({ ...novoAluno, Nome: e.target.value })} required fullWidth />
+              <TextField label="RA" value={novoAluno.RA} onChange={(e) => setNovoAluno({ ...novoAluno, RA: e.target.value })} required fullWidth />
+              <TextField label="CPF" value={novoAluno.CPF} onChange={(e) => setNovoAluno({ ...novoAluno, CPF: e.target.value })} required fullWidth />
+              <TextField label="Telefone" value={novoAluno.Telefone} onChange={(e) => setNovoAluno({ ...novoAluno, Telefone: e.target.value })} required fullWidth />
+              <TextField label="Data de Nascimento" type="date" value={novoAluno.DataNascimento} onChange={(e) => setNovoAluno({ ...novoAluno, DataNascimento: e.target.value })} required fullWidth InputLabelProps={{ shrink: true }} />
+              <FormControl fullWidth required>
+                <InputLabel>Gênero</InputLabel>
+                <Select value={novoAluno.Genero} onChange={(e) => setNovoAluno({ ...novoAluno, Genero: e.target.value })}>
+                  <MenuItem value="Masculino">Masculino</MenuItem>
+                  <MenuItem value="Feminino">Feminino</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth>
+                <InputLabel>Turma</InputLabel>
+                <Select value={novoAluno.TurmaId || ""} onChange={(e) => setNovoAluno({ ...novoAluno, TurmaId: e.target.value ? Number(e.target.value) : undefined })}>
+                  <MenuItem value="">Sem turma</MenuItem>
+                  {turmas.map((turma) => (
+                    <MenuItem key={turma.Id} value={turma.Id}>{turma.turma.Nome}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField label="Senha" type="password" value={novoAluno.Senha} onChange={(e) => setNovoAluno({ ...novoAluno, Senha: e.target.value })} required fullWidth />
+            </Box>
+            <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
+              <Button variant="outlined" onClick={() => setOpenCriar(false)}>Cancelar</Button>
+              <Button variant="contained" onClick={salvarNovoAluno}>Cadastrar Aluno</Button>
+            </Box>
           </Box>
         </Modal>
 
-        {/* Modal Editar / Visualizar */}
+        {/* Modal View */}
+        <Modal open={openView} onClose={() => setOpenView(false)}>
+          <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "#fff", borderRadius: 3, maxWidth: 600, width: "90%", boxShadow: 5 }}>
+            <Box sx={{ background: "linear-gradient(135deg, #3B82F6 0%, #6366F1 100%)", p: 3, borderRadius: "12px 12px 0 0", color: "#fff" }}>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Box sx={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: "1.25rem" }}>
+                    {alunoSelecionado?.Nome.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase()}
+                  </Box>
+                  <Box>
+                    <Typography variant="h5" sx={{ fontWeight: "bold" }}>{alunoSelecionado?.Nome}</Typography>
+                    <Typography>RA: {alunoSelecionado?.RA}</Typography>
+                  </Box>
+                </Box>
+                <Button onClick={() => setOpenView(false)} sx={{ color: "#fff" }}>X</Button>
+              </Box>
+            </Box>
+            <Box sx={{ p: 3 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 3 }}>
+                <Box sx={{ background: "#F9FAFB", p: 2, borderRadius: 1 }}>
+                  <Typography sx={{ fontSize: "0.75rem", color: "#6B7280", mb: 0.5 }}>CPF</Typography>
+                  <Typography sx={{ fontWeight: "medium", color: "#1F2937" }}>{alunoSelecionado?.CPF}</Typography>
+                </Box>
+                <Box sx={{ background: "#F9FAFB", p: 2, borderRadius: 1 }}>
+                  <Typography sx={{ fontSize: "0.75rem", color: "#6B7280", mb: 0.5 }}>Telefone</Typography>
+                  <Typography sx={{ fontWeight: "medium", color: "#1F2937" }}>{alunoSelecionado?.Telefone}</Typography>
+                </Box>
+                <Box sx={{ background: "#F9FAFB", p: 2, borderRadius: 1 }}>
+                  <Typography sx={{ fontSize: "0.75rem", color: "#6B7280", mb: 0.5 }}>Data de Nascimento</Typography>
+                  <Typography sx={{ fontWeight: "medium", color: "#1F2937" }}>{alunoSelecionado?.DataNascimento ? new Date(alunoSelecionado.DataNascimento).toLocaleDateString('pt-BR') : ''}</Typography>
+                </Box>
+                <Box sx={{ background: "#F9FAFB", p: 2, borderRadius: 1 }}>
+                  <Typography sx={{ fontSize: "0.75rem", color: "#6B7280", mb: 0.5 }}>Gênero</Typography>
+                  <Typography sx={{ fontWeight: "medium", color: "#1F2937" }}>{alunoSelecionado?.Genero}</Typography>
+                </Box>
+                <Box sx={{ background: "#F9FAFB", p: 2, borderRadius: 1 }}>
+                  <Typography sx={{ fontSize: "0.75rem", color: "#6B7280", mb: 0.5 }}>Turma</Typography>
+                  <Typography sx={{ fontWeight: "medium", color: "#1F2937" }}>{turmas.find(t => t.Id === alunoSelecionado?.TurmaId)?.turma.Nome || "Sem turma"}</Typography>
+                </Box>
+                <Box sx={{ background: "#F9FAFB", p: 2, borderRadius: 1 }}>
+                  <Typography sx={{ fontSize: "0.75rem", color: "#6B7280", mb: 0.5 }}>Status</Typography>
+                  <Typography sx={{ fontWeight: "medium", color: alunoSelecionado?.Status === "Ativo" ? "#10B981" : "#EF4444" }}>{alunoSelecionado?.Status}</Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", pt: 2, borderTop: "1px solid #E5E7EB" }}>
+                <Button variant="outlined" color="error" onClick={() => excluirAluno(alunoSelecionado?.Id)}>Excluir</Button>
+                <Button variant="contained" onClick={() => { setOpenView(false); setOpenEditar(true); setEditMode(true); }}>Editar Aluno</Button>
+              </Box>
+            </Box>
+          </Box>
+        </Modal>
+
+        {/* Modal Editar */}
         <Modal open={openEditar} onClose={() => setOpenEditar(false)}>
-          <Box className={styles["modal-box"]}>
-            {alunoSelecionado && !editMode && (
-              <>
-                <Typography variant="h6" className={styles["modal-title"]}>
-                  Informações do Aluno
-                </Typography>
-                <div className={styles["info-section"]}>
-                  <p className={styles["info-item"]}><strong>Nome:</strong> {alunoSelecionado.Nome}</p>
-                  <p className={styles["info-item"]}><strong>RA:</strong> {alunoSelecionado.RA}</p>
-                  <p className={styles["info-item"]}><strong>CPF:</strong> {alunoSelecionado.CPF}</p>
-                  <p className={styles["info-item"]}><strong>Status:</strong> {alunoSelecionado.Status}</p>
-                  <p className={styles["info-item"]}><strong>Gênero:</strong> {alunoSelecionado.Genero}</p>
-                  <p className={styles["info-item"]}><strong>Telefone:</strong> {alunoSelecionado.Telefone}</p>
-                  <p className={styles["info-item"]}><strong>Data Nascimento:</strong> {alunoSelecionado.DataNascimento}</p>
-                  <p className={styles["info-item"]}>
-                    <strong>Turma:</strong> {turmas.find((t) => t.Id === alunoSelecionado.TurmaId)?.turma.Nome || "Sem turma"}
-                  </p>
-                </div>
-
-                <Box className={styles["modal-actions"]}>
-                  <Button variant="contained" onClick={() => setEditMode(true)} className={styles["action-button"]}>
-                    Editar
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={() => excluirAluno(alunoSelecionado.Id)}
-                    className={styles["action-button-danger"]}
-                  >
-                    Excluir
-                  </Button>
-                </Box>
-              </>
-            )}
-
-            {alunoSelecionado && editMode && (
-              <>
-                <Typography variant="h6" className={styles["modal-title"]}>
-                  Editar Aluno
-                </Typography>
-                <Input
-                  placeholder="Nome"
-                  value={alunoSelecionado.Nome}
-                  onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Nome: e.target.value })}
-                  className={styles["modal-input"]}
-                />
-                <Input
-                  placeholder="RA"
-                  value={alunoSelecionado.RA}
-                  onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, RA: e.target.value })}
-                  className={styles["modal-input"]}
-                />
-                <Input
-                  placeholder="CPF"
-                  value={alunoSelecionado.CPF}
-                  onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, CPF: e.target.value })}
-                  className={styles["modal-input"]}
-                />
-                <Input
-                  placeholder="Telefone"
-                  value={alunoSelecionado.Telefone}
-                  onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Telefone: e.target.value })}
-                  className={styles["modal-input"]}
-                />
-                <Input
-                  placeholder="Data Nascimento"
-                  type="date"
-                  value={alunoSelecionado.DataNascimento}
-                  onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, DataNascimento: e.target.value })}
-                  className={styles["modal-input"]}
-                />
-
-                <FormControl className={styles["modal-form-control"]}>
-                  <FormLabel>Gênero</FormLabel>
-                  <RadioGroup
-                    row
-                    value={alunoSelecionado.Genero}
-                    onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Genero: e.target.value })}
-                    className={styles["modal-radio-group"]}
-                  >
-                    <FormControlLabel value="Masculino" control={<Radio />} label="Masculino" />
-                    <FormControlLabel value="Feminino" control={<Radio />} label="Feminino" />
-                  </RadioGroup>
+          <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", background: "#fff", p: 4, borderRadius: 3, maxWidth: 600, width: "90%", maxHeight: "90vh", overflowY: "auto", boxShadow: 5 }}>
+            <Typography variant="h5" sx={{ fontWeight: "bold", color: "#4F46E5", mb: 3 }}>Editar Aluno</Typography>
+            {alunoSelecionado && (
+              <Box component="form" sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mb: 3 }}>
+                <TextField label="Nome Completo" value={alunoSelecionado.Nome} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Nome: e.target.value })} required fullWidth />
+                <TextField label="RA" value={alunoSelecionado.RA} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, RA: e.target.value })} required fullWidth />
+                <TextField label="CPF" value={alunoSelecionado.CPF} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, CPF: e.target.value })} required fullWidth />
+                <TextField label="Telefone" value={alunoSelecionado.Telefone} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Telefone: e.target.value })} required fullWidth />
+                <TextField label="Data de Nascimento" type="date" value={alunoSelecionado.DataNascimento} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, DataNascimento: e.target.value })} required fullWidth InputLabelProps={{ shrink: true }} />
+                <FormControl fullWidth required>
+                  <InputLabel>Gênero</InputLabel>
+                  <Select value={alunoSelecionado.Genero} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Genero: e.target.value })}>
+                    <MenuItem value="Masculino">Masculino</MenuItem>
+                    <MenuItem value="Feminino">Feminino</MenuItem>
+                  </Select>
                 </FormControl>
-
-                <FormControl fullWidth className={styles["modal-form-control"]}>
-                  <FormLabel>Turma</FormLabel>
-                  <select
-                    value={alunoSelecionado.TurmaId || ""}
-                    onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, TurmaId: Number(e.target.value) })}
-                    className={styles["modal-select"]}
-                  >
-                    <option value="">Selecione uma turma</option>
+                <FormControl fullWidth>
+                  <InputLabel>Turma</InputLabel>
+                  <Select value={alunoSelecionado.TurmaId || ""} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, TurmaId: e.target.value ? Number(e.target.value) : undefined })}>
+                    <MenuItem value="">Sem turma</MenuItem>
                     {turmas.map((turma) => (
-                      <option key={turma.Id} value={turma.Id}>
-                        {turma.turma.Nome}
-                      </option>
+                      <MenuItem key={turma.Id} value={turma.Id}>{turma.turma.Nome}</MenuItem>
                     ))}
-                  </select>
+                  </Select>
                 </FormControl>
-
-                <Box className={styles["modal-actions"]}>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={() => excluirAluno(alunoSelecionado.Id)}
-                    className={styles["action-button-danger"]}
-                  >
-                    Excluir
-                  </Button>
-                  <Button variant="contained" onClick={salvarEdicao} className={styles["action-button"]}>
-                    Salvar
-                  </Button>
-                </Box>
-              </>
+                <TextField label="Senha" type="password" value={alunoSelecionado.Senha} onChange={(e) => setAlunoSelecionado({ ...alunoSelecionado, Senha: e.target.value })} required fullWidth />
+              </Box>
             )}
+            <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
+              <Button variant="outlined" onClick={() => setOpenEditar(false)}>Cancelar</Button>
+              <Button variant="contained" onClick={salvarEdicao}>Salvar Alterações</Button>
+            </Box>
           </Box>
         </Modal>
 
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={4000}
-          onClose={() => setSnackbarOpen(false)}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-          className={styles["snackbar-container"]}
-        >
-          <MuiAlert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} variant="filled">
-            {snackbarMessage}
-          </MuiAlert>
+        <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)}>
+          <MuiAlert severity={snackbarSeverity}>{snackbarMessage}</MuiAlert>
         </Snackbar>
 
-        {/* Botão flutuante Criar */}
-        <Box onClick={() => setOpenCriar(true)} className={styles["floating-button"]}>
-          <FaPlus size={20} />
+        <Box onClick={() => setOpenCriar(true)} sx={{ position: "fixed", bottom: 24, right: 24, background: "linear-gradient(135deg, #3B82F6 0%, #6366F1 100%)", width: 56, height: 56, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: 3, cursor: "pointer" }}>
+          <FaPlus size={20} color="#fff" />
         </Box>
       </main>
     </div>

@@ -160,231 +160,182 @@ export default function ProfessorAtividadePageComponentI({
   return (
     <div>
       <Navbar usuario={usuario} />
-      <Box sx={{ p: 3, position: "relative", zIndex: 1, left: "20%" }}>
-        <h1>Atividades por Turma</h1>
+      <Box
+        sx={{
+          p: 3,
+          position: "relative",
+          left: "320px",
+          maxWidth: "1024px",
+          minHeight: "100vh",
+          // bgcolor: "#f3f4f6",
+          borderRadius: 2,
+        }}
+      >
+        <Typography
+          variant="h4"
+          sx={{
+            mb: 3,
+            fontWeight: 700,
+            color: "#4f46e5",
+            textAlign: "center",
+          }}
+        >
+          Atividades por Turma
+        </Typography>
 
         {/* Tabs para separar turmas */}
         <Tabs
           value={tabIndex}
           onChange={(_, newValue) => setTabIndex(newValue)}
-          sx={{ mb: 3 }}
+          sx={{
+            mb: 3,
+            "& .MuiTab-root": { textTransform: "none", fontWeight: 600, color: "#374151" },
+            "& .Mui-selected": { color: "#4f46e5" },
+            "& .MuiTabs-indicator": { bgcolor: "#4f46e5" },
+          }}
         >
           {turmasOrdenadas.map((turma) => (
             <Tab key={turma.Id} label={turma.Nome} />
           ))}
         </Tabs>
 
+        {/* Botão de adicionar atividade */}
         <Button
           variant="contained"
-          sx={{ mb: 2 }}
+          sx={{
+            mb: 3,
+            bgcolor: "#4f46e5",
+            "&:hover": { bgcolor: "#4338ca" },
+            borderRadius: 2,
+            py: 1.5,
+            px: 3,
+            fontWeight: 600,
+            boxShadow: 3,
+          }}
           onClick={() => setOpenCriar(true)}
         >
-          Nova Atividade
+          Adicionar Atividade
         </Button>
 
-        {/* Lista de atividades da turma selecionada */}
-        <ul>
+        {/* Lista de atividades em cards */}
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 2,
+          }}
+        >
           {atividades
             .filter((a) => a.turma === turmasOrdenadas[tabIndex]?.Nome)
             .map((atividade) => (
-              <li
+              <Box
                 key={atividade.id}
-                style={{ cursor: "pointer", color: "blue" }}
                 onClick={() => handleOpenDetalhes(atividade)}
+                sx={{
+                  flex: "1 1 calc(45% - 16px)",
+                  bgcolor: "#fff",
+                  p: 2,
+                  borderRadius: 2,
+                  boxShadow: 2,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  "&:hover": { transform: "translateY(-3px)", boxShadow: 6 },
+                }}
               >
-                {atividade.titulo} – Entrega:{" "}
-                {new Date(atividade.dataEntrega).toLocaleString()}
-              </li>
-            ))}
-        </ul>
-      </Box>
-
-      {/* Modal de Detalhes */}
-      <Modal open={openDetalhes} onClose={handleCloseDetalhes}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 650,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-          }}
-        >
-          {atividadeSelecionada && (
-            <>
-              <Typography variant="h5" gutterBottom>
-                {atividadeSelecionada.titulo}
-              </Typography>
-              <Typography>Descrição: {atividadeSelecionada.descricao}</Typography>
-              <Typography>
-                Data de Criação:{" "}
-                {new Date(atividadeSelecionada.dataCriacao).toLocaleString()}
-              </Typography>
-              <Typography>
-                Data de Entrega:{" "}
-                {new Date(atividadeSelecionada.dataEntrega).toLocaleString()}
-              </Typography>
-              <Typography>
-                Data de Finalização:{" "}
-                {new Date(
-                  atividadeSelecionada.dataFinalizacao
-                ).toLocaleString()}
-              </Typography>
-              <Typography>Professor: {atividadeSelecionada.professor}</Typography>
-              <Typography>Turma: {atividadeSelecionada.turma}</Typography>
-              <Typography>Disciplina: {atividadeSelecionada.disciplina}</Typography>
-
-              <Typography variant="h6" sx={{ mt: 2 }}>
-                Alunos da {atividadeSelecionada.turma}
-              </Typography>
-              <List>
-                {turmas
-                  .find((t) => t.Nome === atividadeSelecionada.turma)
-                  ?.alunos?.map((aluno) => (
-                    <ListItem key={aluno.Id}>
-                      <ListItemText
-                        primary={aluno.Nome}
-                        secondary={`Disciplina: ${atividadeSelecionada.disciplina}`}
-                      />
-                      <TextField
-                        type="number"
-                        size="small"
-                        label="Nota"
-                        value={notas[aluno.Id] || ""}
-                        onChange={(e) =>
-                          handleNotaChange(aluno.Id, Number(e.target.value))
-                        }
-                        sx={{ width: "100px", ml: 2 }}
-                      />
-                    </ListItem>
-                  ))}
-              </List>
-
-              <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-                <Button onClick={handleCloseDetalhes} sx={{ mr: 2 }}>
-                  Cancelar
-                </Button>
-                <Button variant="contained" onClick={handleSalvarNotas}>
-                  Salvar Notas
-                </Button>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: "#4f46e5", mb: 1 }}>
+                  {atividade.titulo}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Entrega: {new Date(atividade.dataEntrega).toLocaleString()}
+                </Typography>
               </Box>
-            </>
+            ))}
+          {atividades.filter((a) => a.turma === turmasOrdenadas[tabIndex]?.Nome).length === 0 && (
+            <Typography sx={{ color: "#6b7280" }}>Nenhuma atividade encontrada.</Typography>
           )}
         </Box>
-      </Modal>
 
-      {/* Modal de Criar Atividade */}
-      <Modal open={openCriar} onClose={() => setOpenCriar(false)}>
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 500,
-            bgcolor: "background.paper",
-            borderRadius: 2,
-            boxShadow: 24,
-            p: 4,
-          }}
-        >
-          <Typography variant="h6" gutterBottom>
-            Criar Nova Atividade
-          </Typography>
+        {/* Modal de Detalhes */}
+        <Modal open={openDetalhes} onClose={handleCloseDetalhes}>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: { xs: "90%", sm: 650 },
+              bgcolor: "#ffffff",
+              borderRadius: 3,
+              boxShadow: 24,
+              p: 4,
+            }}
+          >
+            {atividadeSelecionada && (
+              <>
+                <Typography variant="h5" sx={{ mb: 2, fontWeight: 700, color: "#4f46e5" }}>
+                  {atividadeSelecionada.titulo}
+                </Typography>
+                <Typography sx={{ mb: 1 }}>Descrição: {atividadeSelecionada.descricao}</Typography>
+                <Typography sx={{ mb: 1 }}>
+                  Data de Criação: {new Date(atividadeSelecionada.dataCriacao).toLocaleString()}
+                </Typography>
+                <Typography sx={{ mb: 1 }}>
+                  Data de Entrega: {new Date(atividadeSelecionada.dataEntrega).toLocaleString()}
+                </Typography>
+                <Typography sx={{ mb: 1 }}>
+                  Data de Finalização: {new Date(atividadeSelecionada.dataFinalizacao).toLocaleString()}
+                </Typography>
+                <Typography sx={{ mb: 1 }}>Professor: {atividadeSelecionada.professor}</Typography>
+                <Typography sx={{ mb: 2 }}>Turma: {atividadeSelecionada.turma}</Typography>
 
-          <TextField
-            label="Título"
-            fullWidth
-            margin="normal"
-            value={novaAtividade.titulo}
-            onChange={(e) =>
-              setNovaAtividade((p) => ({ ...p, titulo: e.target.value }))
-            }
-          />
-          <TextField
-            label="Descrição"
-            fullWidth
-            margin="normal"
-            multiline
-            rows={3}
-            value={novaAtividade.descricao}
-            onChange={(e) =>
-              setNovaAtividade((p) => ({ ...p, descricao: e.target.value }))
-            }
-          />
-          <TextField
-            type="datetime-local"
-            label="Data de Entrega"
-            fullWidth
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-            value={novaAtividade.dataEntrega}
-            onChange={(e) =>
-              setNovaAtividade((p) => ({ ...p, dataEntrega: e.target.value }))
-            }
-          />
-          <TextField
-            type="datetime-local"
-            label="Data de Finalização"
-            fullWidth
-            margin="normal"
-            InputLabelProps={{ shrink: true }}
-            value={novaAtividade.dataFinalizacao}
-            onChange={(e) =>
-              setNovaAtividade((p) => ({
-                ...p,
-                dataFinalizacao: e.target.value,
-              }))
-            }
-          />
+                <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                  Alunos da {atividadeSelecionada.turma}
+                </Typography>
+                <List sx={{ maxHeight: 250, overflow: "auto", bgcolor: "#f3f4f6", borderRadius: 2, p: 1 }}>
+                  {turmas
+                    .find((t) => t.Nome === atividadeSelecionada.turma)
+                    ?.alunos?.map((aluno) => (
+                      <ListItem
+                        key={aluno.Id}
+                        sx={{
+                          borderRadius: 2,
+                          mb: 1,
+                          bgcolor: "#fff",
+                          boxShadow: 1,
+                          transition: "all 0.2s",
+                          "&:hover": { transform: "translateY(-1px)", boxShadow: 4 },
+                          opacity: aluno.Status === "Desativado" ? 0.5 : 1,
+                        }}
+                      >
+                        <ListItemText
+                          primary={aluno.Nome}
+                          secondary={`Disciplina: ${atividadeSelecionada.disciplina}`}
+                        />
+                        <TextField
+                          type="number"
+                          size="small"
+                          label="Nota"
+                          value={notas[aluno.Id] || ""}
+                          onChange={(e) => handleNotaChange(aluno.Id, Number(e.target.value))}
+                          sx={{ width: "100px", ml: 2 }}
+                        />
+                      </ListItem>
+                    ))}
+                </List>
 
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Turma</InputLabel>
-            <Select
-              value={novaAtividade.turma}
-              onChange={(e) =>
-                setNovaAtividade((p) => ({ ...p, turma: e.target.value }))
-              }
-            >
-              {turmas.map((turma) => (
-                <MenuItem key={turma.Id} value={turma.Nome}>
-                  {turma.Nome}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Select de disciplinas automáticas */}
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Disciplina</InputLabel>
-            <Select
-              value={novaAtividade.disciplina}
-              onChange={(e) =>
-                setNovaAtividade((p) => ({ ...p, disciplina: e.target.value }))
-              }
-            >
-              {disciplinasProfessor.map((disciplina, index) => (
-                <MenuItem key={index} value={disciplina}>
-                  {disciplina}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-            <Button onClick={() => setOpenCriar(false)} sx={{ mr: 2 }}>
-              Cancelar
-            </Button>
-            <Button variant="contained" onClick={handleCriarAtividade}>
-              Criar
-            </Button>
+                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 3 }}>
+                  <Button onClick={handleCloseDetalhes} sx={{ mr: 2 }}>
+                    Cancelar
+                  </Button>
+                  <Button variant="contained" sx={{ bgcolor: "#4f46e5", "&:hover": { bgcolor: "#4338ca" } }} onClick={handleSalvarNotas}>
+                    Salvar Notas
+                  </Button>
+                </Box>
+              </>
+            )}
           </Box>
-        </Box>
-      </Modal>
+        </Modal>
+      </Box>
     </div>
   );
 }

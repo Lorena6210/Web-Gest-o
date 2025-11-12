@@ -103,77 +103,122 @@ export default function ResponsavelPageComponent({ usuario, turmas }: Props) {
   };
 
   return (
-    <Box sx={{ p: 4 }}>
+    <Box sx={{ p: 4, bgcolor: "#f3f4f6", minHeight: "100vh" }}>
       <Navbar usuario={usuario} />
 
-      <Typography variant="h4" sx={{ mb: 2 }}>
+      <Typography variant="h4" sx={{ mb: 4, fontWeight: 700, color: "#4f46e5", textAlign: "center" }}>
         Bem-vindo, {usuario.Nome}
       </Typography>
 
-      <Typography variant="h5" sx={{ mt: 2 }}>Turmas vinculadas</Typography>
-      {turmas.length === 0 ? (
-        <Typography>Nenhuma turma encontrada.</Typography>
-      ) : (
-        turmas.map((turma) => (
-          <Box key={turma.Id} sx={{ border: "1px solid #ccc", p: 2, my: 2, borderRadius: 2 }}>
-            <Typography variant="h6">{turma.Nome}</Typography>
-            <Button
-              variant="outlined"
-              sx={{ mt: 1 }}
-              onClick={fetchAlunosDoResponsavel}
-            >
-              Ver Alunos
-            </Button>
-          </Box>
-        ))
-      )}
-
-      {loadingAlunos && <CircularProgress sx={{ mt: 2 }} />}
-      
-      {alunos.length > 0 && (
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h5">Alunos</Typography>
-          {alunos.map((aluno) => (
-            <Box key={aluno.Id} sx={{ border: "1px solid #aaa", p: 2, my: 2, borderRadius: 2 }}>
-              <Typography variant="h6">{aluno.Nome}</Typography>
-              <Typography>RA: {aluno.RA}</Typography>
-              <Button
-                variant="contained"
-                sx={{ mt: 1 }}
-                onClick={() => fetchEventosDoAluno(aluno.Id)}
+      {/* Turmas */}
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, color: "#1e40af" }}>
+          Turmas vinculadas
+        </Typography>
+        {turmas.length === 0 ? (
+          <Typography sx={{ color: "#6b7280" }}>Nenhuma turma encontrada.</Typography>
+        ) : (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {turmas.map((turma) => (
+              <Box
+                key={turma.Id}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  bgcolor: "#ffffff",
+                  boxShadow: 2,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  transition: "all 0.2s",
+                  "&:hover": { transform: "translateY(-2px)", boxShadow: 6 },
+                }}
               >
-                Ver Eventos
-              </Button>
-            </Box>
-          ))}
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  {turma.Nome}
+                </Typography>
+                <Button
+                  variant="contained"
+                  sx={{ bgcolor: "#4f46e5", "&:hover": { bgcolor: "#4338ca" } }}
+                  onClick={fetchAlunosDoResponsavel}
+                >
+                  Ver Alunos
+                </Button>
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Box>
+
+      {/* Alunos */}
+      {alunos.length > 0 && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, color: "#1e40af" }}>Alunos</Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {alunos.map((aluno) => (
+              <Box
+                key={aluno.Id}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  bgcolor: "#ffffff",
+                  boxShadow: 2,
+                  transition: "all 0.2s",
+                  "&:hover": { transform: "translateY(-2px)", boxShadow: 6 },
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>{aluno.Nome}</Typography>
+                <Typography sx={{ color: "#6b7280" }}>RA: {aluno.RA || "Não informado"}</Typography>
+                <Button
+                  variant="contained"
+                  sx={{ mt: 2, bgcolor: "#4f46e5", "&:hover": { bgcolor: "#4338ca" } }}
+                  onClick={() => fetchEventosDoAluno(aluno.Id)}
+                >
+                  Ver Eventos
+                </Button>
+              </Box>
+            ))}
+          </Box>
         </Box>
       )}
 
-      {loadingEventos && <CircularProgress sx={{ mt: 2 }} />}
-
+      {/* Eventos */}
       {eventos.length > 0 && (
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h5">Eventos</Typography>
-          {eventos.map((ev) => (
-            <Box
-              key={ev.Id}
-              sx={{
-                border: "1px solid #666",
-                p: 2,
-                my: 2,
-                borderRadius: 2,
-                backgroundColor: "#f9f9f9",
-              }}
-            >
-              <Typography variant="h6">{ev.Titulo}</Typography>
-              <Typography>{ev.Descricao}</Typography>
-              <Typography>Data: {new Date(ev.Data).toLocaleDateString("pt-BR")}</Typography>
-              <Typography>Criado por: {ev.CriadoPor}</Typography>
-            </Box>
-          ))}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h5" sx={{ mb: 2, fontWeight: 600, color: "#1e40af" }}>Eventos</Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {eventos.map((ev) => (
+              <Box
+                key={ev.Id}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  bgcolor: "#f9fafb",
+                  boxShadow: 1,
+                  transition: "all 0.2s",
+                  "&:hover": { transform: "translateY(-2px)", boxShadow: 3 },
+                }}
+              >
+                <Typography variant="h6" sx={{ fontWeight: 600, color: "#4f46e5" }}>
+                  {ev.Titulo}
+                </Typography>
+                <Typography sx={{ mb: 1 }}>{ev.Descricao}</Typography>
+                <Typography sx={{ color: "#6b7280" }}>Data: {new Date(ev.Data).toLocaleDateString("pt-BR")}</Typography>
+                <Typography sx={{ color: "#6b7280" }}>Criado por: {ev.CriadoPor}</Typography>
+              </Box>
+            ))}
+          </Box>
         </Box>
       )}
 
+      {/* Loading */}
+      {(loadingAlunos || loadingEventos) && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {/* Snackbar */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={4000}

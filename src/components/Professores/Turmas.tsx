@@ -57,114 +57,131 @@ export default function Turmas({ usuario, turmas }: Props) {
   }, [search, turmasDoProfessor]);
 
   return (
- <div style={{  display: 'flex', maxWidth:"100%", width: '100%', height: '90vh', fontFamily: 'Arial, sans-serif',}}>
-   <Navbar usuario={usuario} />
-  <main style={{ position: 'relative', left: '280px', flex: 1, padding: '30px',}}>
-   {/* Campo de busca */}
-  <div style={{ position: 'relative', marginBottom: '30px',maxWidth: '400px',}}>
-   <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." style={{ width: '100%', padding: '10px 40px 10px 15px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '16px',}} />
-    <span style={{ position: 'absolute', right: '12px', top: '10px', fontSize: '18px', color: '#888',}}>
-     <FaMagnifyingGlass />
-    </span>
-   </div>
+<div
+  style={{
+    display: "flex",
+  }}
+>
+  <Navbar usuario={usuario} />
+  <main
+    style={{
+      position: "relative",
+      left: "280px",
+      flex: 1,
+      padding: "30px",
+      maxWidth: "1024px",
+    }}
+  >
+    {/* Campo de busca */}
+    <div style={{ position: "relative", marginBottom: "30px", maxWidth: "400px" }}>
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Buscar turma ou disciplina..."
+        style={{
+          width: "100%",
+          padding: "10px 40px 10px 15px",
+          borderRadius: "12px",
+          border: "1px solid #ccc",
+          fontSize: "16px",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+          transition: "all 0.25s",
+        }}
+      />
+      <span
+        style={{
+          position: "absolute",
+          right: "12px",
+          top: "50%",
+          transform: "translateY(-50%)",
+          fontSize: "18px",
+          color: "#888",
+        }}
+      >
+        <FaMagnifyingGlass />
+      </span>
+    </div>
+
+    {/* Grid de turmas */}
     <div
       style={{
-        borderRadius: "8px",
-        overflow: "hidden",
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '20px',
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "20px",
+        justifyContent: "flex-start",
       }}
     >
       {turmasFiltradas.map((turma) => (
-       <div
-        key={turma.Id}
-        style={{
-          marginBottom: "10px",
-          borderRadius: "8px",
-          overflow: "hidden",
-          backgroundColor: "#fff",
-          flex: '0 0 calc(30% - 20px)', // Ajuste para melhor espaçamento
-          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-          transition: 'transform 0.2s, box-shadow 0.2s',
-          cursor: 'pointer'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.02)';
-          e.currentTarget.style.boxShadow = '0 8px 16px rgba(0, 0, 0, 0.2)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
-        }}
-      >
-        {/* Cabeçalho */}
         <div
+          key={turma.Id}
           style={{
-            backgroundColor: cardColors[turma.Id % cardColors.length],
-            padding: "10px",
-            fontWeight: "bold",
-            color: "#fff",
-            textAlign: "center",
-            fontSize: "1.2em",
+            flex: "0 0 calc(30% - 20px)",
+            borderRadius: "16px",
+            overflow: "hidden",
+            backgroundColor: "#fff",
+            boxShadow: "0 6px 20px rgba(0,0,0,0.08)",
+            transition: "transform 0.3s, box-shadow 0.3s, opacity 0.3s",
+            cursor: "pointer",
+            opacity: turma.Status === "Desativado" ? 0.5 : 1,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-5px)";
+            e.currentTarget.style.boxShadow = "0 12px 24px rgba(0,0,0,0.15)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)";
           }}
         >
-          {turma.Nome}
-        </div>
-
-        {/* Disciplinas */}
-        <div style={{ padding: "10px", fontSize: "14px", color: "#333", textAlign: "center" }}>
-          {turma.disciplinas?.length
-            ? turma.disciplinas.map((d) => d.Nome).join(", ")
-            : "Nenhuma disciplina"}
-        </div>
-
-        {/* Rodapé */}
-        <div
-          style={{
-            padding: "8px 10px",
-            color: "#fff",
-            fontWeight: "bold",
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: "14px",
-            backgroundColor: cardColors[turma.Id % cardColors.length],
-          }}
-        >
-          <button
+          {/* Cabeçalho com gradient */}
+          <div
             style={{
-              background: 'none',
-              border: 'none',
-              color: '#fff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
+              background: `linear-gradient(135deg, ${cardColors[turma.Id % cardColors.length]}, #fff)`,
+              padding: "14px",
+              fontWeight: "700",
+              color: "#fff",
+              textAlign: "center",
+              fontSize: "1.2em",
+              letterSpacing: "0.5px",
             }}
-            onClick={() => {/* Navegar para conteúdo */}}
-            aria-label={`Acessar conteúdo de ${turma.Nome}`} // Acessibilidade
           >
-            <i className="fas fa-file-alt"></i>
-            Conteúdo
-          </button>
-          <button
+            {turma.Nome}
+          </div>
+
+          {/* Lista de disciplinas */}
+          <div
             style={{
-              background: 'none',
-              border: 'none',
-              color: '#fff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
+              padding: "15px",
+              fontSize: "14px",
+              color: "#333",
+              textAlign: "left",
+              minHeight: "60px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
             }}
-            onClick={() => {/* Navegar para notas */}}
-            aria-label={`Acessar notas de ${turma.Nome}`} // Acessibilidade
           >
-            <i className="fas fa-chart-bar"></i>
-            Notas
-          </button>
+            {turma.disciplinas?.length ? (
+              turma.disciplinas.map((d) => (
+                <span key={d.Id} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span
+                    style={{
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      backgroundColor: cardColors[d.Id % cardColors.length],
+                      flexShrink: 0,
+                    }}
+                  ></span>
+                  {d.Nome}
+                </span>
+              ))
+            ) : (
+              <span style={{ fontStyle: "italic", color: "#888" }}>Nenhuma disciplina</span>
+            )}
+          </div>
         </div>
-      </div>
       ))}
     </div>
   </main>

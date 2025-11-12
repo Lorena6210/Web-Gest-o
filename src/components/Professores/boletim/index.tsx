@@ -74,132 +74,242 @@ export default function ProfessorBoletimPage({
   };
 
   return (
-    <div>
-      <Navbar usuario={usuario} />
-      <Box sx={{ marginLeft: "320px", width: "74%", mt: 4, px: 2 }}>
-        <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
-          Boletim por Turma, Bimestre e Disciplina
-        </Typography>
+<Box>
+  <Navbar usuario={usuario} />
 
-        {turmasDoProfessor.map((turma) => {
-          // Agrupar boletim por bimestre dentro da turma
-          const bimestresMap: Record<number, Boletim[]> = {};
-          boletim
-            .filter((b) => turma.alunos?.some((a) => a.Id === b.Id_Aluno))
-            .forEach((b) => {
-              if (!bimestresMap[b.Id_Bimestre]) bimestresMap[b.Id_Bimestre] = [];
-              bimestresMap[b.Id_Bimestre].push(b);
-            });
+  <Box sx={{ ml: "320px", width: "74%", mt: 4, px: 2, fontFamily: "Arial, sans-serif" }}>
+    <Typography
+      variant="h4"
+      sx={{ mb: 4, fontWeight: "bold", color: "#4f46e5", textAlign: "center" }}
+    >
+      Boletim por Turma, Bimestre e Disciplina
+    </Typography>
 
-          return (
-            <Paper key={turma.Id} sx={{ mb: 4, p: 2 }}>
-              <Typography variant="h6">
-                {`Turma: ${turma.Nome} / Ano: ${turma.Serie}`}
-              </Typography>
-              <Divider sx={{ my: 2 }} />
+    {turmasDoProfessor.map((turma) => {
+      const bimestresMap: Record<number, Boletim[]> = {};
+      boletim
+        .filter((b) => turma.alunos?.some((a) => a.Id === b.Id_Aluno))
+        .forEach((b) => {
+          if (!bimestresMap[b.Id_Bimestre]) bimestresMap[b.Id_Bimestre] = [];
+          bimestresMap[b.Id_Bimestre].push(b);
+        });
 
-              {Object.entries(bimestresMap)
-                .sort((a, b) => Number(a[0]) - Number(b[0]))
-                .map(([bimestreStr, boletinsDoBimestre]) => {
-                  const bimestreNum = Number(bimestreStr);
+      return (
+        <Paper
+          key={turma.Id}
+          sx={{
+            mb: 5,
+            p: 3,
+            borderRadius: 3,
+            boxShadow: 5,
+            bgcolor: "#ffffff",
+            transition: "transform 0.2s, box-shadow 0.2s",
+            "&:hover": { transform: "translateY(-2px)", boxShadow: 8 },
+          }}
+        >
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: "#1e40af" }}
+            >
+              {`Turma: ${turma.Nome} / Ano: ${turma.Serie}`}
+            </Typography>
 
-                  // Agrupar por disciplina
-                  const disciplinasMap: Record<string, Boletim[]> = {};
-                  boletinsDoBimestre.forEach((b) => {
-                    if (!disciplinasMap[b.disciplina]) disciplinasMap[b.disciplina] = [];
-                    disciplinasMap[b.disciplina].push(b);
-                  });
+            {/* Botão para adicionar Bimestre */}
+            <Button
+              variant="contained"
+              sx={{
+                bgcolor: "#4f46e5",
+                "&:hover": { bgcolor: "#4338ca" },
+                textTransform: "none",
+              }}
+              onClick={() => alert(`Adicionar Bimestre na turma ${turma.Nome}`)}
+            >
+              + Adicionar Bimestre
+            </Button>
+          </Box>
 
-                  return (
-                    <Paper key={bimestreNum} sx={{ mb: 3, p: 2 }}>
-                      <Typography variant="subtitle1" fontWeight="bold">
-                        {bimestreNum}º Bimestre
-                      </Typography>
-                      <Divider sx={{ my: 1 }} />
+          <Divider sx={{ borderColor: "#e5e7eb", mb: 3 }} />
 
-                      {Object.entries(disciplinasMap).map(([nomeDisciplina, notasDisciplina]) => (
-                        <Accordion key={nomeDisciplina} sx={{ mb: 2 }}>
-                          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                            <Typography variant="subtitle2" fontWeight="bold">
-                              {nomeDisciplina} {/* Nome da disciplina dentro do bimestre */}
-                            </Typography>
-                          </AccordionSummary>
-                          <AccordionDetails>
-                            <Table size="small">
-                              <TableHead>
-                                <TableRow sx={{ backgroundColor: "#1976d2" }}>
-                                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Aluno</TableCell>
-                                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Média Atividades</TableCell>
-                                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Média Provas</TableCell>
-                                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Média Final</TableCell>
-                                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Frequência</TableCell>
-                                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Situação</TableCell>
-                                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Observações</TableCell>
-                                  <TableCell sx={{ color: "white", fontWeight: "bold" }}>Ações</TableCell>
-                                </TableRow>
-                              </TableHead>
-                              <TableBody>
-                                {notasDisciplina.map((nota) => {
-                                  const aluno = turma.alunos?.find((a) => a.Id === nota.Id_Aluno);
-                                  if (!aluno) return null;
-                                  const chave = `${nota.Id_Aluno}-${nota.Id_Disciplina}-${nota.Id_Bimestre}`;
-                                  const editado = notasEditadas[chave] || {};
+          {Object.entries(bimestresMap)
+            .sort((a, b) => Number(a[0]) - Number(b[0]))
+            .map(([bimestreStr, boletinsDoBimestre]) => {
+              const bimestreNum = Number(bimestreStr);
 
-                                  return (
-                                    <TableRow key={chave} hover>
-                                      <TableCell>{aluno.Nome}</TableCell>
-                                      <TableCell>{parseFloat(nota.MediaAtividades || "0").toFixed(2)}</TableCell>
-                                      <TableCell>{parseFloat(nota.MediaProvas || "0").toFixed(2)}</TableCell>
-                                      <TableCell>
-                                        <TextField
-                                          type="number"
-                                          size="small"
-                                          value={editado.MediaFinal ?? parseFloat(nota.MediaFinal || "0").toFixed(2)}
-                                          onChange={(e) => handleChange(chave, "MediaFinal", e.target.value)}
-                                        />
-                                      </TableCell>
-                                      <TableCell>
-                                        {nota.Frequencia === 0 ? "100%" : `${Math.max(0, 100 - nota.Frequencia * 1)}%`}
-                                      </TableCell>
-                                      <TableCell>
-                                        <Select
-                                          size="small"
-                                          value={editado.Situacao ?? nota.Situacao ?? ""}
-                                          onChange={(e) => handleChange(chave, "Situacao", e.target.value)}
-                                        >
-                                          <MenuItem value="">Não definida</MenuItem>
-                                          <MenuItem value="Aprovado">Aprovado</MenuItem>
-                                          <MenuItem value="Reprovado">Reprovado</MenuItem>
-                                          <MenuItem value="Recuperação">Recuperação</MenuItem>
-                                        </Select>
-                                      </TableCell>
-                                      <TableCell>
-                                        <TextField
-                                          size="small"
-                                          value={editado.Observacoes ?? nota.Observacoes ?? ""}
-                                          onChange={(e) => handleChange(chave, "Observacoes", e.target.value)}
-                                        />
-                                      </TableCell>
-                                      <TableCell>
-                                        <Button size="small" variant="contained" onClick={() => handleSalvar(chave)}>
-                                          Salvar
-                                        </Button>
-                                      </TableCell>
-                                    </TableRow>
-                                  );
-                                })}
-                              </TableBody>
-                            </Table>
-                          </AccordionDetails>
-                        </Accordion>
-                      ))}
-                    </Paper>
-                  );
-                })}
-            </Paper>
+              const disciplinasMap: Record<string, Boletim[]> = {};
+              boletinsDoBimestre.forEach((b) => {
+                if (!disciplinasMap[b.disciplina]) disciplinasMap[b.disciplina] = [];
+                disciplinasMap[b.disciplina].push(b);
+              });
+
+              return (
+                <Paper
+                  key={bimestreNum}
+                  sx={{
+                    mb: 4,
+                    p: 2,
+                    borderRadius: 2,
+                    bgcolor: "#f9fafb",
+                  }}
+                >
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight="bold"
+                    sx={{ color: "#1e3a8a", mb: 1 }}
+                  >
+                    {bimestreNum}º Bimestre
+                  </Typography>
+                  <Divider sx={{ my: 1, borderColor: "#cbd5e1" }} />
+
+                  {Object.entries(disciplinasMap).map(
+                    ([nomeDisciplina, notasDisciplina]) => (
+                      <Accordion
+                        key={nomeDisciplina}
+                        sx={{
+                          mb: 2,
+                          borderRadius: 2,
+                          "&:before": { display: "none" },
+                          boxShadow: 1,
+                        }}
+                      >
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                          <Typography
+                            variant="subtitle2"
+                            fontWeight="bold"
+                            sx={{ color: "#2563eb" }}
+                          >
+                            {nomeDisciplina}
+                          </Typography>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Table size="small" sx={{ borderRadius: 2 }}>
+                            <TableHead>
+                              <TableRow sx={{ backgroundColor: "#2563eb" }}>
+                                {[
+                                  "Aluno",
+                                  "Média Atividades",
+                                  "Média Provas",
+                                  "Média Final",
+                                  "Frequência",
+                                  "Situação",
+                                  "Observações",
+                                  "Ações",
+                                ].map((col) => (
+                                  <TableCell
+                                    key={col}
+                                    sx={{
+                                      color: "#ffffff",
+                                      fontWeight: "bold",
+                                      textAlign: "center",
+                                    }}
+                                  >
+                                    {col}
+                                  </TableCell>
+                                ))}
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {notasDisciplina.map((nota) => {
+                                const aluno = turma.alunos?.find(
+                                  (a) => a.Id === nota.Id_Aluno
+                                );
+                                if (!aluno) return null;
+                                const chave = `${nota.Id_Aluno}-${nota.Id_Disciplina}-${nota.Id_Bimestre}`;
+                                const editado = notasEditadas[chave] || {};
+
+                                return (
+                                  <TableRow
+                                    key={chave}
+                                    hover
+                                    sx={{
+                                      "&:hover": { backgroundColor: "#e0f2fe" },
+                                    }}
+                                  >
+                                    <TableCell>{aluno.Nome}</TableCell>
+                                    <TableCell>
+                                      {parseFloat(
+                                        nota.MediaAtividades || "0"
+                                      ).toFixed(2)}
+                                    </TableCell>
+                                    <TableCell>
+                                      {parseFloat(nota.MediaProvas || "0").toFixed(2)}
+                                    </TableCell>
+                                    <TableCell>
+                                      <TextField
+                                        type="number"
+                                        size="small"
+                                        value={
+                                          editado.MediaFinal ??
+                                          parseFloat(nota.MediaFinal || "0").toFixed(2)
+                                        }
+                                        onChange={(e) =>
+                                          handleChange(chave, "MediaFinal", e.target.value)
+                                        }
+                                        sx={{ width: "80px" }}
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      {nota.Frequencia === 0
+                                        ? "100%"
+                                        : `${Math.max(
+                                            0,
+                                            100 - nota.Frequencia * 1
+                                          )}%`}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Select
+                                        size="small"
+                                        value={editado.Situacao ?? nota.Situacao ?? ""}
+                                        onChange={(e) =>
+                                          handleChange(chave, "Situacao", e.target.value)
+                                        }
+                                        sx={{ width: "120px" }}
+                                      >
+                                        <MenuItem value="">Não definida</MenuItem>
+                                        <MenuItem value="Aprovado">Aprovado</MenuItem>
+                                        <MenuItem value="Reprovado">Reprovado</MenuItem>
+                                        <MenuItem value="Recuperação">Recuperação</MenuItem>
+                                      </Select>
+                                    </TableCell>
+                                    <TableCell>
+                                      <TextField
+                                        size="small"
+                                        value={editado.Observacoes ?? nota.Observacoes ?? ""}
+                                        onChange={(e) =>
+                                          handleChange(chave, "Observacoes", e.target.value)
+                                        }
+                                        sx={{ width: "150px" }}
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Button
+                                        size="small"
+                                        variant="contained"
+                                        sx={{
+                                          bgcolor: "#4f46e5",
+                                          "&:hover": { bgcolor: "#4338ca" },
+                                        }}
+                                        onClick={() => handleSalvar(chave)}
+                                      >
+                                        Salvar
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </AccordionDetails>
+                      </Accordion>
+                    )
+                  )}
+                </Paper>
+              );
+            })}
+        </Paper>
           );
         })}
       </Box>
-    </div>
+    </Box>
   );
 }

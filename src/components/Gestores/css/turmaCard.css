@@ -233,3 +233,42 @@ body {
     justify-content: center;
   }
 }
+
+/* dashboard.css */
+
+.dashboard-cards {
+  display: flex;
+  width: 1024px;
+  margin-left: 320px;
+  gap: 1rem; /* espaçamento entre os cards */
+  margin-bottom: 1.5rem; /* equivalente ao mb-6 do Tailwind */
+}
+
+.dashboard-cards .card {
+  flex: 1; /* cada card ocupa espaço igual */
+  padding: 1rem; /* p-4 */
+  border-radius: 0.5rem; /* rounded-lg */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* shadow-md */
+  text-align: center;
+  color: black; /* texto preto */
+}
+
+/* cores dos cards */
+.card-turmas {
+  background-color: #4f46e5; /* bg-indigo-600 */
+}
+
+.card-alunos {
+  background-color: #16a34a; /* bg-green-600 */
+}
+
+.card-professores {
+  background-color: #f59e0b; /* bg-yellow-600 */
+}
+
+/* Título dentro dos cards */
+.card h3 {
+  font-size: 1.5rem; /* text-2xl */
+  font-weight: bold; /* font-bold */
+  margin-bottom: 0.5rem;
+}

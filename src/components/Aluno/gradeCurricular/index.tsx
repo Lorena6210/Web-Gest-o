@@ -42,8 +42,21 @@ export default function AlunoGradeCurricular({
   return (
     <Box>
       <Navbar usuario={usuario} />
-      <Box sx={{ mb: 3, mt: 2, marginLeft: "320px", paddingRight: "40px" }}>
-        <Typography variant="h5" gutterBottom>
+      <Box
+        sx={{
+          mb: 3,
+          mt: 2,
+          marginLeft: "320px",
+          paddingRight: "40px",
+          maxWidth: "1024px",
+          minHeight: "100vh",
+        }}
+      >
+        <Typography
+          variant="h5"
+          gutterBottom
+          sx={{ textAlign: "center", fontWeight: 700, color: "#4f46e5", mb: 4 }}
+        >
           Grade Curricular - {turma?.Nome} ({turma?.Serie})
         </Typography>
 
@@ -59,8 +72,22 @@ export default function AlunoGradeCurricular({
           ).sort();
 
           return (
-            <Paper key={grade.Id_GradeCurricular} sx={{ mb: 4, p: 2 }}>
-              <Typography variant="h6" gutterBottom>
+            <Paper
+              key={grade.Id_GradeCurricular}
+              sx={{
+                mb: 4,
+                p: 3,
+                borderRadius: 3,
+                boxShadow: 4,
+                transition: "all 0.3s",
+                "&:hover": { boxShadow: 8 },
+              }}
+            >
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ fontWeight: 600, color: "#1e40af" }}
+              >
                 {grade.Descricao_Grade}
               </Typography>
 
@@ -74,12 +101,27 @@ export default function AlunoGradeCurricular({
                 if (disciplinasFiltradas.length === 0) return null;
 
                 return (
-                  <Box key={bimestre} sx={{ mt: 2 }}>
-                    <Typography variant="subtitle1" sx={{ mb: 1 }}>
+                  <Box key={bimestre} sx={{ mt: 3 }}>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ mb: 2, fontWeight: 600, color: "#4f46e5" }}
+                    >
                       {bimestre}º Bimestre
                     </Typography>
 
-                    <Table size="small">
+                    <Table
+                      size="small"
+                      sx={{
+                        "& .MuiTableCell-root": { borderBottom: "1px solid #e5e7eb" },
+                        "& .MuiTableRow-root:nth-of-type(odd)": {
+                          backgroundColor: "#f9fafb",
+                        },
+                        "& .MuiTableHead-root": {
+                          backgroundColor: "#4f46e5",
+                          "& .MuiTableCell-root": { color: "#ffffff", fontWeight: 600 },
+                        },
+                      }}
+                    >
                       <TableHead>
                         <TableRow>
                           <TableCell>Código</TableCell>
@@ -90,7 +132,7 @@ export default function AlunoGradeCurricular({
                       </TableHead>
                       <TableBody>
                         {disciplinasFiltradas.map((disciplina) => (
-                          <TableRow key={disciplina.Codigo}>
+                          <TableRow key={disciplina.Codigo} hover>
                             <TableCell>{disciplina.Codigo}</TableCell>
                             <TableCell>{disciplina.Nome}</TableCell>
                             <TableCell>{disciplina.Descricao || "-"}</TableCell>
